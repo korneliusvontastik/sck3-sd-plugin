@@ -1,0 +1,77 @@
+{
+	"Name": "Star Citizen Kommand Kontrol Kit",
+	"Version": "0.1.0.0",
+	"Author": "Kornelius Von Tastik",
+	"Actions": [
+		{
+			"Name": "Keybind Auto-Fill",
+			"UUID": "com.kvt.sck3.keybindautofill",
+			"Icon": "imgs/actions/keybind-auto-fill/icon",
+			"Tooltip": "Generates a complete Star Citizen keybind profile and writes it to actionmaps.xml.",
+			"PropertyInspectorPath": "ui/keybind-auto-fill.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/keybind-auto-fill/key",
+					"TitleAlignment": "middle"
+				}
+			]
+		},
+		{
+			"Name": "Channel Indicator",
+			"UUID": "com.kvt.sck3.channelindicator",
+			"Icon": "imgs/actions/channel-indicator/icon",
+			"Tooltip": "Shows the active Star Citizen channel (LIVE, PTU, EPTU). Press to cycle between installed channels.",
+			"PropertyInspectorPath": "ui/channel-indicator.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/channel-indicator/key",
+					"TitleAlignment": "middle"
+				}
+			]
+		},
+		{
+			"Name": "Open Logs",
+			"UUID": "com.kvt.sck3.openlogs",
+			"Icon": "imgs/actions/open-logs/icon",
+			"Tooltip": "Opens the plugin's log folder in Windows Explorer.",
+			"PropertyInspectorPath": "ui/open-logs.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/open-logs/key",
+					"TitleAlignment": "middle"
+				}
+			]
+		}
+	],
+	"Category": "Star Citizen Kommand Kontrol Kit",
+	"CategoryIcon": "imgs/plugin/category-icon",
+	"CodePath": "bin/plugin.js",
+	"Description": "Star Citizen plugin for Elgato Stream Deck devices, part of SCK3, the Star Citizen Kommand Kontrol Kit by KVT Korp. Provides instant access to and control of all available actions by mapping keys to the game's binds. Pair it with SCK3 profiles and icons for full immersion in the verse. Unofficial fan-made project, not affiliated with or endorsed by Cloud Imperium Games or Roberts Space Industries. Star Citizen is a registered trademark of Cloud Imperium Rights LLC.",
+	"Icon": "imgs/plugin/marketplace",
+	"URL": "https://github.com/korneliusvontastik/sck3-sd-plugin",
+	"SupportURL": "https://discord.gg/krWnxzWGfp",
+	"SDKVersion": 3,
+	"Software": {
+		"MinimumVersion": "7.1"
+	},
+	"OS": [
+		{
+			"Platform": "windows",
+			"MinimumVersion": "10"
+		}
+	],
+	"Nodejs": {
+		"Version": "24",
+		"Debug": "enabled"
+	},
+	"UUID": "com.kvt.sck3"
+}

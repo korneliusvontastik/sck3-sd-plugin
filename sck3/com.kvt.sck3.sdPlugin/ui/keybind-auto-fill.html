@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Keybind Auto-Fill</title>
+<link rel="stylesheet" href="channel-widget.css"/>
+<style>
+  :root {
+    --bg: #00000000;
+    --surface: #2a2a2a;
+    --border: #3a3a3a;
+    --text: #e0e0e0;
+    --dim: #888;
+    --accent: #4da6ff;
+    --green: #44cc66;
+    --red: #cc4444; 
+    --yellow: #e6cc00;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 12px;
+  }
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .label {
+    font-size: 11px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .channel-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .path {
+    font-size: 11px;
+    color: var(--dim);
+    word-break: break-all;
+    margin-top: 4px;
+  }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+  }
+  .stat-label { color: var(--dim); }
+  .stat-value { color: var(--text); text-align: right; }
+  .stat-value.ok { color: var(--green); }
+  .stat-value.warn { color: var(--yellow); }
+  .stat-value.error { color: var(--red); }
+  .stat-label.group-title { color: #fff; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-value.group-title { font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-file { color: var(--accent); font-size: 11px; word-break: break-all; }
+  .event-row { margin-bottom: 8px; }
+  .event-row:last-child { margin-bottom: 0; }
+  .event-title { color: var(--text); font-size: 12px; }
+  .event-meta { color: var(--dim); font-size: 11px; margin-top: 2px; }
+  .event-path { color: var(--accent); font-size: 11px; word-break: break-all; }
+  .event-path.clickable { cursor: pointer; }
+  .event-path.clickable:hover { text-decoration: underline; }
+  .event-skipped { color: var(--dim); font-style: italic; }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .toggle-desc { line-height: 1.4; }
+  .toggle-desc small { color: var(--dim); font-size: 11px; }
+  /* Simple toggle switch */
+  .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #444; border-radius: 20px; transition: background 0.2s;
+  }
+  .slider::before {
+    content: ""; position: absolute;
+    width: 14px; height: 14px; left: 3px; bottom: 3px;
+    background: #fff; border-radius: 50%; transition: transform 0.2s;
+  }
+  input:checked + .slider { background: var(--accent); }
+  input:checked + .slider::before { transform: translateX(16px); }
+  .btn-row { display: flex; gap: 6px; margin-top: 6px; }
+  button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 4px 10px;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  #runBox {
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    user-select: none;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+  }
+  #runBox.clickable { cursor: pointer; }
+  #runBox.clickable:hover { border-color: var(--accent); }
+  #runBox.idle { color: var(--accent); background: #1c3a52; border-color: var(--accent); }
+  #runBox.running { color: var(--accent); background: #1c3a52; border-color: var(--accent); cursor: default; }
+  #runBox.ok { color: var(--green); background: #143a20; border-color: var(--green); }
+  #runBox.warn { color: var(--yellow); background: #3a3316; border-color: var(--yellow); }
+  #runBox.error { color: var(--red); background: #3a1a1a; border-color: var(--red); }
+  .report-status { font-size: 12px; margin-bottom: 6px; }
+  .report-status.ok { color: var(--green); }
+  .report-status.warn { color: var(--yellow); }
+  .report-status.error { color: var(--red); }
+  pre.report-box {
+    max-height: 160px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-family: "Consolas", monospace;
+    font-size: 11px;
+    color: var(--text);
+    background: #111;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    margin-top: 4px;
+  }
+  #status { color: var(--dim); font-size: 11px; text-align: center; padding-top: 4px; }
+  .file-hint { color: var(--dim); font-size: 10px; word-break: break-all; margin-top: 3px; }
+  .channel-found { font-size: 12px; margin-left: 2px; }
+  .channel-found.ok { color: var(--green); }
+  .channel-found.warn { color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- Channel & path -->
+<div class="section">
+  <div class="label">Active Channel</div>
+  <div class="channel-row">
+    <div class="channel-dot" id="channelDot"></div>
+    <strong id="channelName">—</strong>
+    <span id="channelFound"></span>
+  </div>
+  <div class="file-hint" id="channelChecked"></div>
+</div>
+
+<!-- Settings -->
+<div class="section">
+  <div class="label">Settings</div>
+
+  <div class="toggle-row">
+    <div class="toggle-desc">
+      Auto-replace actionmaps.xml<br>
+      <small>Only when SC is not running — writes the generated binds directly into your active profile. Always leaves the importable custom profile as a fallback either way.</small>
+    </div>
+    <label class="switch">
+      <input type="checkbox" id="autoReplace" checked>
+      <span class="slider"></span>
+    </label>
+  </div>
+</div>
+
+<div id="runBox" class="idle clickable" tabindex="0" role="button">Run</div>
+
+<!-- Report -->
+<div class="section">
+  <div class="label">Report</div>
+
+  <div class="stat-grid" style="margin-bottom:8px;">
+    <span class="stat-label group-title">Actions</span><span class="stat-value group-title"></span>
+    <span class="stat-label">Total actions found</span><span class="stat-value" id="statTotal">—</span>
+    <span class="stat-label">Default binds</span><span class="stat-value" id="statDefaultBound">—</span>
+    <span class="stat-label">User binds</span><span class="stat-value" id="statUserBound">—</span>
+    <span class="stat-label">Generated binds</span><span class="stat-value" id="statBinds">—</span>
+    <span class="stat-label">Total actions filled</span><span class="stat-value" id="statFilled">—</span>
+
+    <span class="stat-label group-title">Conflicts — input (ignored)</span><span class="stat-value group-title" id="conflictInputTotal">—</span>
+    <span class="stat-label">Default / Default</span><span class="stat-value" id="statConflictDD">—</span>
+    <span class="stat-label">User / Default</span><span class="stat-value" id="statConflictUD">—</span>
+    <span class="stat-label">User / User</span><span class="stat-value" id="statConflictUU">—</span>
+
+    <span class="stat-label group-title">Conflicts — output</span><span class="stat-value group-title" id="conflictOutputTotal">—</span>
+    <span class="stat-label">Default&amp;User / Generated</span><span class="stat-value" id="statConflictOE">—</span>
+    <span class="stat-label">Generated / Generated</span><span class="stat-value" id="statConflictOG">—</span>
+  </div>
+
+  <div class="report-status" id="reportStatus">No run yet</div>
+  <pre class="report-box" id="reportBox"></pre>
+  <div class="btn-row">
+    <button id="btnOpenReport" disabled>Open report</button>
+  </div>
+</div>
+
+<!-- File events -->
+<div class="section">
+  <div class="label">File Events</div>
+  <div class="report-status error" id="fileEventsNote" style="display:none;">Last run failed — steps below completed before the failure, the rest did not run.</div>
+
+  <div class="event-row">
+    <div class="event-title">defaultProfile.xml extracted</div>
+    <div class="event-meta" id="evExtract">—</div>
+    <div class="event-path" id="evExtractPath"></div>
+  </div>
+  <div class="event-row">
+    <div class="event-title">actionmaps.xml read</div>
+    <div class="event-meta" id="evRead">—</div>
+    <div class="event-path" id="evReadPath"></div>
+  </div>
+  <div class="event-row">
+    <div class="event-title">Custom profile written</div>
+    <div class="event-meta" id="evWrite">—</div>
+    <div class="event-path" id="evWritePath"></div>
+  </div>
+  <div class="event-row">
+    <div class="event-title">actionmaps.xml overwritten</div>
+    <div class="event-meta" id="evReplace">—</div>
+    <div class="event-path" id="evReplacePath"></div>
+  </div>
+</div>
+
+<div id="status">Connecting…</div>
+
+<script src="pi-common.js"></script>
+<script src="channel-widget.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  function send(payload) {
+    PICommon.send(payload);
+  }
+
+  function formatEvent(prefixId, pathId, evt) {
+    const metaEl = document.getElementById(prefixId);
+    const pathEl = document.getElementById(pathId);
+    if (!evt) {
+      metaEl.textContent = "—";
+      metaEl.className = "event-meta";
+      pathEl.textContent = "";
+      pathEl.className = "event-path";
+      return;
+    }
+    metaEl.textContent = new Date(evt.timestamp).toLocaleString();
+    metaEl.className = "event-meta";
+    pathEl.textContent = evt.path;
+    pathEl.className = "event-path clickable";
+  }
+
+  // Clickable file paths — each opens the actual file the plugin wrote, looked up on the
+  // backend from lastResult (never sends the raw path string itself back to the plugin).
+  [
+    ["evExtractPath", "defaultProfileExtracted"],
+    ["evReadPath", "actionMapsRead"],
+    ["evWritePath", "customProfileWritten"],
+    ["evReplacePath", "actionMapsWritten"],
+  ].forEach(([elId, kind]) => {
+    document.getElementById(elId).addEventListener("click", (e) => {
+      if (isRunning || !e.target.textContent) return;
+      send({ event: "openPath", kind });
+    });
+  });
+
+  let isRunning = false;
+
+  function setRunBox(text, cssClass, clickable) {
+    const box = document.getElementById("runBox");
+    box.textContent = text;
+    box.className = cssClass + (clickable ? " clickable" : "");
+  }
+
+  // Reflects the idle/DONE/WARNING/FAILED state of the last run — mirrors the physical
+  // button's own face (see keybind-auto-fill-icons.ts) so PI and hardware never disagree.
+  function applyRunResult(lr) {
+    if (!lr) {
+      setRunBox("Run", "idle", true);
+    } else if (lr.status === "ok") {
+      setRunBox("DONE — click to run again", "ok", true);
+    } else if (lr.status === "warn") {
+      const errorCount = (lr.validation?.issues ?? []).filter(i => i.severity === "error").length;
+      const middle = errorCount > 0 ? `${errorCount} CONFLICT${errorCount === 1 ? "" : "S"}` : "WARNING";
+      setRunBox(`DONE — ${middle} — click to run again`, "warn", true);
+    } else {
+      setRunBox("FAILED — click to run again", "error", true);
+    }
+  }
+
+  function applySettings(s) {
+    // Any settings push means a run is not currently in progress — reflect idle/last-result state.
+    isRunning = false;
+    applyRunResult(s?.lastResult ?? null);
+
+    const ch = s?.currentChannel ?? null;
+    const version = s?.currentChannelVersion ?? null;
+    const dot = document.getElementById("channelDot");
+    const nameEl = document.getElementById("channelName");
+    const foundEl = document.getElementById("channelFound");
+    ChannelWidget.renderReadOnly(dot, nameEl, ch, ch ? { name: ch, version } : null);
+    foundEl.textContent = ch ? "✓" : "⚠";
+    foundEl.className = "channel-found " + (ch ? "ok" : "warn");
+    document.getElementById("channelChecked").textContent = s?.channelCheckedAt
+      ? `checked ${new Date(s.channelCheckedAt).toLocaleTimeString()}`
+      : "";
+
+    const lr = s?.lastResult;
+    const events = lr?.events ?? {};
+    document.getElementById("fileEventsNote").style.display = lr?.status === "error" ? "block" : "none";
+    formatEvent("evExtract", "evExtractPath", events.defaultProfileExtracted);
+    formatEvent("evRead", "evReadPath", events.actionMapsRead);
+    formatEvent("evWrite", "evWritePath", events.customProfileWritten);
+    if (events.actionMapsWritten) {
+      formatEvent("evReplace", "evReplacePath", events.actionMapsWritten);
+    } else {
+      document.getElementById("evReplace").textContent = lr ? "skipped (SC running or disabled)" : "—";
+      document.getElementById("evReplace").className = "event-meta event-skipped";
+      document.getElementById("evReplacePath").textContent = "";
+      document.getElementById("evReplacePath").className = "event-path";
+    }
+
+    // Actions / conflicts stats
+    const stats = lr?.validation?.stats;
+    const conflicts = stats?.conflicts;
+    const setStat = (id, value) => {
+      document.getElementById(id).textContent = value != null ? String(value) : "—";
+    };
+    setStat("statTotal", stats?.total);
+    setStat("statDefaultBound", stats?.defaultBound);
+    setStat("statUserBound", stats?.userBound);
+    setStat("statFilled", stats?.filled);
+    setStat("statBinds", lr?.bindsGenerated);
+
+    // Input conflicts (default/default, user/default, user/user) are pre-existing state — CIG's
+    // or the player's own — that this run neither caused nor resolves, so they're always "warn"
+    // (orange), never "error": nothing to do but flag them. Output conflicts (ours vs.
+    // existing/generated) are this run's own responsibility, so they're "error" (red) when
+    // present — that's the only thing that determines whether this run is "good".
+    const setConflictStat = (id, value, severityClass, extraClass) => {
+      const el = document.getElementById(id);
+      el.textContent = value != null ? String(value) : "—";
+      const classes = ["stat-value"];
+      if (extraClass) classes.push(extraClass);
+      if (value != null) classes.push(value > 0 ? severityClass : "ok");
+      el.className = classes.join(" ");
+    };
+    setConflictStat("statConflictDD", conflicts?.defaultDefault, "warn");
+    setConflictStat("statConflictUD", conflicts?.userDefault, "warn");
+    setConflictStat("statConflictUU", conflicts?.userUser, "warn");
+    setConflictStat("statConflictOE", conflicts?.outputVsExisting, "error");
+    setConflictStat("statConflictOG", conflicts?.outputVsGenerated, "error");
+
+    const inputTotal = conflicts ? conflicts.defaultDefault + conflicts.userDefault + conflicts.userUser : null;
+    const outputTotal = conflicts ? conflicts.outputVsExisting + conflicts.outputVsGenerated : null;
+    setConflictStat("conflictInputTotal", inputTotal, "warn", "group-title");
+    setConflictStat("conflictOutputTotal", outputTotal, "error", "group-title");
+
+    // Report
+    const statusEl = document.getElementById("reportStatus");
+    const reportBox = document.getElementById("reportBox");
+    if (!lr) {
+      statusEl.textContent = "No run yet";
+      statusEl.className = "report-status";
+      reportBox.textContent = "";
+    } else if (lr.status === "ok") {
+      statusEl.textContent = "Last run completed successfully";
+      statusEl.className = "report-status ok";
+      const preExistingLines = (lr.validation?.issues ?? [])
+        .filter(i => i.severity === "warning")
+        .map(i => `[${(i.kind ?? i.severity).toUpperCase()}] ${i.action} (${i.mapName}): ${i.message}`);
+      reportBox.textContent = preExistingLines.length
+        ? `${lr.bindsGenerated} bind(s) generated, no output conflicts. ${preExistingLines.length} ignored input conflict(s) (CIG/user's own, not this run's doing):\n` + preExistingLines.join("\n")
+        : `${lr.bindsGenerated} bind(s) generated, no conflicts.`;
+    } else if (lr.status === "warn") {
+      statusEl.textContent = "Last run completed with conflicts";
+      statusEl.className = "report-status warn";
+      const lines = (lr.validation?.issues ?? [])
+        .filter(i => i.severity !== "info")
+        .map(i => `[${(i.kind ?? i.severity).toUpperCase()}] ${i.action} (${i.mapName}): ${i.message}`);
+      reportBox.textContent = lines.length ? lines.join("\n") : "No conflicts.";
+    } else {
+      statusEl.textContent = "Last run failed";
+      statusEl.className = "report-status error";
+      reportBox.textContent = lr.errorMessage ?? "Unknown error.";
+    }
+    const reportEvent = lr?.events?.reportWritten;
+    document.getElementById("btnOpenReport").disabled = !reportEvent;
+
+    // Toggles
+    document.getElementById("autoReplace").checked = s?.autoReplace !== false;
+  }
+
+  function applyPhase(p) {
+    isRunning = true;
+    setRunBox(`Running: ${p.label} (${p.index + 1}/${p.total})`, "running", false);
+    // The report/paths shown right now describe the *previous* run — block interaction so a
+    // click mid-run can't silently open stale results while a new run is still in flight.
+    document.getElementById("btnOpenReport").disabled = true;
+  }
+
+  // Run box — idle state runs the process; a persisted result state soft-restarts it (the
+  // plugin decides which based on whether lastResult is currently set).
+  document.getElementById("runBox").addEventListener("click", () => {
+    if (isRunning) return;
+    send({ event: "run" });
+  });
+  document.getElementById("runBox").addEventListener("keydown", (e) => {
+    if (isRunning) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      send({ event: "run" });
+    }
+  });
+
+  // Toggle
+  document.getElementById("autoReplace").addEventListener("change", (e) => {
+    send({ event: "setAutoReplace", value: e.target.checked });
+  });
+
+  // Report
+  document.getElementById("btnOpenReport").addEventListener("click", () => {
+    if (isRunning) return;
+    send({ event: "openPath", kind: "reportWritten" });
+  });
+
+  PICommon.init("com.kvt.sck3.keybindautofill", {
+    onStatusChange: (status) => { document.getElementById("status").textContent = status; },
+    onMessage: (ev) => {
+      if (ev.event === "sendToPropertyInspector" && ev.payload?.type === "settings") {
+        applySettings(ev.payload.payload);
+      }
+      if (ev.event === "sendToPropertyInspector" && ev.payload?.type === "phase") {
+        applyPhase(ev.payload.payload);
+      }
+      if (ev.event === "didReceiveSettings") {
+        applySettings(ev.payload?.settings ?? {});
+      }
+    },
+  });
+})();
+</script>
+</body>
+</html>

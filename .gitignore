@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Stream Deck plugin build output
+**/*.sdPlugin/bin/
+**/*.sdPlugin/logs/
+*.streamDeckPlugin
+
+# Dev script output
+scripts/output/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Local-only project notes
+plan.md
+
+# CIG's proprietary game data (full extract) — kept locally for dev tooling only;
+# tests use the trimmed sck3/tests/keybindkrafter/fixtures/defaultProfile.sample.xml instead
+reference/defaultProfile.xml
+
+# OS cruft
+.DS_Store
+Thumbs.db

@@ -1,0 +1,16 @@
+{
+    "name": "sck3-dev-scripts",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "csv": "tsx export-csv.ts"
+    },
+    "dependencies": {
+        "fast-xml-parser": "^4.5.3"
+    },
+    "devDependencies": {
+        "@types/node": "~24.1.0",
+        "tsx": "^4.19.0",
+        "typescript": "^5.2.2"
+    }
+}

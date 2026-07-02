@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Channel Indicator</title>
+<link rel="stylesheet" href="channel-widget.css"/>
+<style>
+  :root {
+    --bg: #00000000;
+    --surface: #2a2a2a;
+    --border: #3a3a3a;
+    --text: #e0e0e0;
+    --dim: #888;
+    --accent: #4da6ff;
+    --green: #44cc66;
+    --red: #cc4444;
+    --yellow: #e6cc00;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 12px;
+  }
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .label {
+    font-size: 11px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .channel-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .channel-select-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    width: 100%;
+    padding: 2px 18px 2px 0;
+    cursor: pointer;
+  }
+  select:hover { color: var(--accent); }
+  select option { background: var(--surface); font-weight: 600; }
+  .select-arrow {
+    position: absolute;
+    right: 2px;
+    color: var(--dim);
+    font-size: 9px;
+    pointer-events: none;
+  }
+  .channel-found { font-size: 12px; margin-left: 2px; }
+  .channel-found.ok { color: var(--green); }
+  .channel-found.warn { color: var(--red); }
+  .file-hint { color: var(--dim); font-size: 10px; word-break: break-all; margin-top: 3px; }
+  .banner {
+    margin-top: 0;
+    font-size: 12px;
+    color: var(--green);
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.3s, max-height 0.3s, margin-top 0.3s;
+  }
+  .banner.visible { margin-top: 8px; max-height: 1.5em; opacity: 1; }
+  .channel-list-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .channel-list-row:last-child { margin-bottom: 0; }
+  .channel-list-info { flex: 1; min-width: 0; }
+  .channel-list-name { font-size: 12px; color: var(--text); }
+  .channel-list-name .version { color: var(--dim); }
+  .channel-list-path { color: var(--accent); font-size: 11px; word-break: break-all; cursor: pointer; }
+  .channel-list-path:hover { text-decoration: underline; }
+  .channel-list-meta { color: var(--dim); font-size: 10px; margin-top: 2px; }
+  .empty-hint { color: var(--dim); font-size: 12px; font-style: italic; }
+  #status { color: var(--dim); font-size: 11px; text-align: center; padding-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Active channel -->
+<div class="section">
+  <div class="label">Active Channel</div>
+  <div class="channel-row">
+    <div class="channel-dot" id="activeDot"></div>
+    <div class="channel-select-wrap">
+      <select id="channelSelect"><option value="">—</option></select>
+      <span class="select-arrow">&#9660;</span>
+    </div>
+    <span class="channel-found" id="activeFound"></span>
+  </div>
+  <div class="file-hint" id="activeChecked"></div>
+  <div class="banner" id="switchBanner"></div>
+</div>
+
+<!-- Discovered channels -->
+<div class="section">
+  <div class="label">Discovered Channels</div>
+  <div id="channelList"></div>
+  <div class="empty-hint" id="emptyHint" style="display:none;">No Star Citizen installs found.</div>
+</div>
+
+<div id="status">Connecting…</div>
+
+<script src="pi-common.js"></script>
+<script src="channel-widget.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  let bannerTimer = null;
+  let lastShownSwitchAt = null;
+
+  function send(payload) {
+    PICommon.send(payload);
+  }
+
+  function showBanner(text) {
+    const el = document.getElementById("switchBanner");
+    el.textContent = text;
+    el.classList.add("visible");
+    if (bannerTimer) clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(() => el.classList.remove("visible"), 2500);
+  }
+
+  function applyState(s) {
+    const active = s?.activeChannel ?? null;
+    const channels = s?.channels ?? [];
+
+    document.getElementById("activeDot").className = ChannelWidget.dotClass(active);
+
+    // Rebuild the dropdown only when its option set actually changed, so an open dropdown
+    // doesn't get yanked out from under the user on every state push.
+    const select = document.getElementById("channelSelect");
+    const currentOptions = Array.from(select.options).map(o => o.value).join(",");
+    const newOptions = channels.map(c => c.name).join(",");
+    if (currentOptions !== newOptions) {
+      select.innerHTML = "";
+      channels.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.name;
+        opt.textContent = ChannelWidget.label(c);
+        opt.style.color = ChannelWidget.color(c.name);
+        select.appendChild(opt);
+      });
+    }
+    select.value = active ?? "";
+    select.style.color = ChannelWidget.color(active) ?? "";
+
+    const foundEl = document.getElementById("activeFound");
+    foundEl.textContent = active ? "✓" : "⚠";
+    foundEl.className = "channel-found " + (active ? "ok" : "warn");
+    document.getElementById("activeChecked").textContent = s?.checkedAt
+      ? `checked ${new Date(s.checkedAt).toLocaleTimeString()}`
+      : "";
+
+    const listEl = document.getElementById("channelList");
+    listEl.innerHTML = "";
+    channels.forEach(c => {
+      const row = document.createElement("div");
+      row.className = "channel-list-row";
+
+      const dot = document.createElement("div");
+      dot.className = ChannelWidget.dotClass(c.name);
+      dot.style.marginTop = "3px";
+
+      const info = document.createElement("div");
+      info.className = "channel-list-info";
+
+      const nameEl = document.createElement("div");
+      nameEl.className = "channel-list-name";
+      nameEl.textContent = c.name + " ";
+      const versionEl = document.createElement("span");
+      versionEl.className = "version";
+      versionEl.textContent = c.version ?? "";
+      nameEl.appendChild(versionEl);
+
+      const pathEl = document.createElement("div");
+      pathEl.className = "channel-list-path";
+      pathEl.textContent = c.path;
+      pathEl.addEventListener("click", () => send({ event: "openPath", channel: c.name }));
+
+      const metaEl = document.createElement("div");
+      metaEl.className = "channel-list-meta";
+      metaEl.textContent = c.checkedAt ? `checked ${new Date(c.checkedAt).toLocaleTimeString()}` : "";
+
+      info.appendChild(nameEl);
+      info.appendChild(pathEl);
+      info.appendChild(metaEl);
+      row.appendChild(dot);
+      row.appendChild(info);
+      listEl.appendChild(row);
+    });
+    document.getElementById("emptyHint").style.display = channels.length ? "none" : "block";
+
+    // Only flash the banner for a switch we haven't already shown.
+    if (s?.lastSwitch && s.lastSwitch.at !== lastShownSwitchAt) {
+      lastShownSwitchAt = s.lastSwitch.at;
+      showBanner(`✓ Switched to ${s.lastSwitch.channel}`);
+    }
+  }
+
+  document.getElementById("channelSelect").addEventListener("change", (e) => {
+    if (!e.target.value) return;
+    send({ event: "setActiveChannel", channel: e.target.value });
+  });
+
+  PICommon.init("com.kvt.sck3.channelindicator", {
+    onStatusChange: (status) => { document.getElementById("status").textContent = status; },
+    onMessage: (ev) => {
+      if (ev.event === "sendToPropertyInspector" && ev.payload?.type === "channels") {
+        applyState(ev.payload.payload);
+      }
+    },
+  });
+})();
+</script>
+</body>
+</html>

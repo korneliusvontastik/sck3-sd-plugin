@@ -1,0 +1,15 @@
+/* Shared "active channel" dot styling — see channel-widget.js. Kept as its own stylesheet (rather
+   than duplicated in each PI's inline <style>) so channel-indicator.html and keybind-auto-fill.html
+   can't drift to different colors for the same channel. Assumes the host page defines --dim. */
+.channel-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dim, #888);
+  flex-shrink: 0;
+}
+.channel-dot.live   { background: #44ff77; }
+.channel-dot.ptu    { background: #ffcc00; }
+.channel-dot.eptu   { background: #ff8800; }
+.channel-dot.hotfix { background: #ff4444; }
+.channel-dot.other  { background: #cc66ff; }
