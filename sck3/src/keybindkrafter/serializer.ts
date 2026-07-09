@@ -67,6 +67,13 @@ function buildFinalKbMap(
  * Serializes a custom profile XML (importable via SC Options > Keybindings > Load from file).
  * Contains only genuine custom binds — pre-existing user overrides + this run's generated fills.
  * CIG defaults are omitted; SC continues to apply those on its own for untouched actions.
+ *
+ * This is a *different* schema from the live actionmaps.xml (see mergeGeneratedIntoActionMaps):
+ * a flat <ActionMaps> root carrying the version/profileName attributes directly, with a
+ * <CustomisationUIHeader><devices>...</devices></CustomisationUIHeader> block — not the nested
+ * <ActionMaps><ActionProfiles>...<options>...</ActionProfiles></ActionMaps> shape SC itself writes
+ * to actionmaps.xml. Reusing that nested shape here silently fails to import — confirmed against a
+ * known-good hand file (SC gives no error, it just doesn't show up as importable).
  */
 export function serializeCustomProfile(
   parsed: ParsedBindings,
@@ -84,7 +91,7 @@ export function serializeCustomProfile(
       if (!bind) continue
       actionNodes.push({
         '@name': action.name,
-        rebind: [{ '@input': bind.input, '@activationMode': bind.mode }],
+        rebind: [{ '@device': 'keyboard', '@activationMode': bind.mode, '@input': bind.input }],
       })
     }
     if (actionNodes.length > 0) {
@@ -94,14 +101,20 @@ export function serializeCustomProfile(
 
   const doc = {
     ActionMaps: {
-      ActionProfiles: {
-        '@version': '1',
-        '@optionsVersion': '2',
-        '@rebindVersion': '2',
-        '@profileName': profileName,
-        options: [{ '@type': 'keyboard', '@instance': '1', '@Product': 'Keyboard  {6F1D2B61-D5A0-11CF-BFC7-444553540000}' }],
-        actionmap: actionmapNodes,
+      '@version': '1',
+      '@optionsVersion': '2',
+      '@rebindVersion': '2',
+      '@profileName': profileName,
+      CustomisationUIHeader: {
+        '@label': profileName,
+        '@description': '',
+        '@image': '',
+        devices: {
+          keyboard: [{ '@instance': '1' }],
+        },
       },
+      modifiers: '',
+      actionmap: actionmapNodes,
     },
   }
 
