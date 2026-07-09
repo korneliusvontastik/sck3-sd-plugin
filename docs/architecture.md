@@ -103,17 +103,18 @@ sck3-sd-plugin/                       ← repo root (NOT shipped)
 │   │   ├── *.test.ts                 ← Vitest unit tests
 │   │   └── fixtures/                 ← small, tracked XML fixtures used by tests (and scripts/export-csv.ts's
 │   │                                    default): actionmaps.xml (virgin/empty template), defaultProfile.sample.xml
-│   │                                    (a genuine 2-actionmap/248-action excerpt of CIG's data — see below)
+│   │                                    (a hand-trimmed 2-actionmap/9-action excerpt of CIG's data — see below)
 │   ├── package.json                  ← scripts + dependencies
 │   ├── rollup.config.mjs             ← bundler config
 │   └── tsconfig.json
 │
 ├── docs/                             ← human documentation (this file lives here, NOT shipped)
-├── reference/                        ← NOT shipped; only holds defaultProfile.xml (gitignored, NOT tracked) —
-│                                        CIG's full ~1,100-action proprietary extract, kept locally so
-│                                        scripts/export-csv.ts can generate a complete keymap CSV. The small,
-│                                        genuinely public-safe fixtures tests need live in sck3/tests/.../fixtures/
-│                                        instead — see above.
+├── reference/                        ← NOT shipped; only README.md is tracked. defaultProfile.xml
+│                                        (gitignored, NOT tracked) is CIG's full ~1,100-action proprietary
+│                                        extract, generated locally via scripts/extract-default-profile.ts
+│                                        so export-csv.ts and parser.real.test.ts can run against the
+│                                        complete real data. The small, genuinely public-safe fixture tests
+│                                        need lives in sck3/tests/.../fixtures/ instead — see above.
 ├── scripts/                          ← standalone dev tooling, own package.json (NOT shipped)
 ├── assets/branding/                  ← README/marketplace images: banner, logos (NOT shipped)
 ├── .github/                          ← issue templates, PR template, CI workflow, FUNDING.yml (NOT shipped)
@@ -445,6 +446,7 @@ Each engine file above has a matching test:
 | `p4k.test.ts` | The custom ZIP64 reader correctly extracts a known entry from a test archive and fails loudly on bad input |
 | `cryxml.test.ts` | The binary XML decoder correctly rebuilds XML from known CryXmlB byte sequences |
 | `pathsfinder.test.ts` | The 4-step discovery chain falls through correctly, and the `SCK3_SC_ROOT` override works |
+| `parser.real.test.ts` | Opt-in: re-runs the axis-detection assertions against the *entire* real ~1,100-action `reference/defaultProfile.xml` (see §4). Skips itself cleanly when that file isn't present locally |
 
 Run them with `npm run test` (from inside `sck3/`).
 
@@ -462,6 +464,8 @@ Run them with `npm run test` (from inside `sck3/`).
 | `streamdeck restart com.kvt.sck3` | Force-reloads the plugin without unplugging the device |
 | `streamdeck validate` | Checks the manifest/folder structure is valid before packaging |
 | `npm run pack` | Builds, strips `logs/`, then produces the distributable `.streamDeckPlugin` — use this, not raw `streamdeck pack` (see §12) |
+| `npx tsx scripts/extract-default-profile.ts [p4k path]` | Dev-only: pulls the full, live `defaultProfile.xml` out of your local `Data.p4k` into `reference/` (gitignored — see §4) |
+| `npm run csv -- [actionmaps.xml path]` | Dev-only: runs the engine against `reference/defaultProfile.xml` + an optional user profile and writes a scannable keymap CSV (`scripts/export-csv.ts`) |
 
 See `docs/dependencies.md` for what each package in `package.json` actually is.
 
