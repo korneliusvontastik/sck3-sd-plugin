@@ -2,7 +2,7 @@
 
 **Project:** SCK3 — Star Citizen Kommand Kontrol Kit  
 **Author:** Kornelius Von Tastik | KVT Korp  
-**SC Version:** 4.8 | **Updated:** 2026-06-30
+**SC Version:** 4.8 | **Updated:** 2026-07-09
 
 For the machine implementation of all rules (key pools, modifier combos, deny lists, context groups) see `sck3/src/keybindkrafter/config.ts`.
 
@@ -10,7 +10,7 @@ For the machine implementation of all rules (key pools, modifier combos, deny li
 
 ## How Star Citizen Keybinds Work
 
-SC uses CryEngine's **DirectInput** layer for all keyboard input. DirectInput operates at the scan code level — it sees physical key positions, not the characters the OS produces.
+SC uses CryEngine's [**DirectInput**](https://learn.microsoft.com/en-us/previous-versions/windows/desktop/ee416842(v=vs.85)) layer for all keyboard input. DirectInput operates at the scan code level — it sees physical key positions, not the characters the OS produces.
 
 ```xml
 <rebind input="kb1_lshift+a"/>
@@ -54,6 +54,29 @@ The Stream Deck plugin sends key combos to the OS via standard keyboard simulati
 | **context group** | KVT engine only | Our collision domain. Defines which actionmaps are active simultaneously. Two actions in the same context group cannot share a combo. Not related to CIG's UICategory. | `spaceship_vehicles`, `foot`, `ui` |
 
 The context group is the core concept behind the generator: SC loads multiple actionmaps at once depending on game state (flying a ship loads ~25 actionmaps simultaneously). Actions in the same context group must have unique combos. Actions in *different* context groups can safely share a combo — they are never active at the same time.
+
+---
+
+## Axis Actions Are Never Auto-Filled
+
+Ship pitch/yaw/roll/strafe and FPS mouse-look are **analog axes**, not key presses — by default they're driven by the mouse or a joystick/gamepad stick, continuously, not by a discrete `kb1_` combo. A Stream Deck button press can't replace that (it's a single digital pulse, not a smoothly varying value), and generating a keyboard bind for one of these actions adds an unwanted `kb1_` override on top of the working analog default — this broke default mouse flight/look in the field and is why this rule exists.
+
+CIG models each analog control as **two separate actions sharing an `optionGroup`**: a digital/HOTAS variant and a dedicated `_mouse` variant that carries the real axis token, e.g.:
+
+```xml
+<action name="v_pitch"       gamepad="thumbry" joystick="y" optionGroup="flight_move_pitch"/>
+<action name="v_pitch_mouse" mouse="maxis_y"                optionGroup="flight_move_pitch"/>
+```
+
+Neither has a `keyboard=` attribute — CIG never gave them one. Naively treating "no keyboard default" as "needs a generated one" is exactly the bug: it stomps `v_pitch_mouse`'s mouse axis with a synthetic key press.
+
+**Detection (`isAxisBinding()` in `config.ts`):** an action's own `mouse`/`joystick`/`gamepad` attribute is checked against CIG's known analog tokens — mouse `maxis_x`/`maxis_y`/`maxis_z`, bare joystick axis names (`x`, `y`, `z`, `rotx`, `roty`, `rotz`, `slider*`), and gamepad thumbstick axes (`thumblx`, `thumbly`, `thumbrx`, `thumbry` — bare `x`/`y` are face *buttons*, not axes, so those are deliberately excluded). This also inherits across `optionGroup` siblings (`parser.ts`), so a sibling with a currently-blank device slot (e.g. `v_roll_mouse`, or the ground-vehicle `v_pitch_mouse`) is still recognized as an axis action rather than looking like an ordinary unbound one.
+
+**The one guard on that inheritance:** if the sibling itself declares `onPress`/`onRelease` — CIG's own signal for "this is a discrete digital control" — it never inherits the axis flag, no matter what else is in its `optionGroup`. This matters because CIG isn't fully consistent: pitch/yaw/roll keep their digital nudge actions (`v_pitch_up`/`v_pitch_down`, `v_yaw_left`/`v_yaw_right`) *outside* the axis `optionGroup` entirely, but strafe's `v_strafe_up`/`v_strafe_down` (real CIG defaults: `space`/`lctrl`) sit *inside* the same `optionGroup` as the analog `v_strafe_vertical`. Without the guard, those two — despite being ordinary, already-keyboard-bound buttons — would incorrectly inherit "axis" from their sibling.
+
+**Where it's enforced:** `parser.ts` computes `isAxisAction: boolean` once per `SCAction`. `generator.ts`'s unbound filter and `validator.ts`'s coverage check both skip anything flagged, so axis actions are never assigned a combo and never reported as a coverage gap.
+
+**Test coverage:** `parser.test.ts`/`generator.test.ts` cover this against the small committed fixture (portable, runs in CI). `parser.real.test.ts` opportunistically re-runs the same assertions against the *entire* real `defaultProfile.xml` (~1100 actions) when a dev has extracted one locally via `scripts/extract-default-profile.ts` — CIG's data is proprietary and never committed (see `.gitignore`), so this suite skips itself cleanly when the file isn't present.
 
 ---
 

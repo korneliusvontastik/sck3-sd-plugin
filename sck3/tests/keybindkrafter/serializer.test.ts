@@ -17,6 +17,7 @@ function makeAction(name: string, mapName: string, binding: Binding | null): SCA
     mapCategory: '',
     activationMode: 'press',
     isToggleCandidate: false,
+    isAxisAction: false,
     bindings: { keyboard: binding, mouse: null, joystick: null, gamepad: null },
   }
 }

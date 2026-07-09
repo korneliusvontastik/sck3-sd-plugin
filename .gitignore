@@ -15,8 +15,11 @@ scripts/output/
 # Local-only project notes
 plan.md
 
-# CIG's proprietary game data (full extract) — kept locally for dev tooling only;
-# tests use the trimmed sck3/tests/keybindkrafter/fixtures/defaultProfile.sample.xml instead
+# CIG's proprietary game data (full extract) — kept locally for dev tooling only, never pushed.
+# Generate with: npx tsx scripts/extract-default-profile.ts
+# CI and most tests run against the trimmed sck3/tests/keybindkrafter/fixtures/defaultProfile.sample.xml;
+# parser.real.test.ts opportunistically runs extra assertions against this real file when present,
+# and skips itself cleanly when it's not (e.g. in CI, or for a contributor without SC installed).
 reference/defaultProfile.xml
 
 # OS cruft

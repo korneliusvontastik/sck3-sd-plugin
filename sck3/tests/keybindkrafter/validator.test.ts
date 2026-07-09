@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { validateFinal } from '../../src/keybindkrafter/validator.js'
 import type { SCAction, GeneratedBind, Binding, BindingSource } from '../../src/keybindkrafter/types.js'
 
-function makeAction(name: string, mapName: string, binding: Binding | null): SCAction {
+function makeAction(name: string, mapName: string, binding: Binding | null, isAxisAction = false): SCAction {
   return {
     name,
     label: name,
@@ -12,6 +12,7 @@ function makeAction(name: string, mapName: string, binding: Binding | null): SCA
     mapCategory: '',
     activationMode: 'press',
     isToggleCandidate: false,
+    isAxisAction,
     bindings: { keyboard: binding, mouse: null, joystick: null, gamepad: null },
   }
 }
@@ -110,6 +111,18 @@ describe('validateFinal — conflict categorization', () => {
     const result = validateFinal(actions, [])
     expect(result.stats.total).toBe(2)
     expect(result.stats.filled).toBe(1)
+  })
+
+  it('counts unbound axis actions separately and excludes them from unbound/coverage errors', () => {
+    const actions = [
+      makeAction('a1', 'spaceship_movement', kb('f1', 'cig')),
+      makeAction('v_pitch_mouse', 'spaceship_movement', null, true),
+    ]
+    const result = validateFinal(actions, [])
+    expect(result.stats.unbound).toBe(0)
+    expect(result.stats.axisSkipped).toBe(1)
+    expect(result.stats.filled).toBe(1)
+    expect(result.issues.filter(i => i.severity === 'error')).toHaveLength(0)
   })
 
   it('sums all conflict categories into conflicts.total', () => {

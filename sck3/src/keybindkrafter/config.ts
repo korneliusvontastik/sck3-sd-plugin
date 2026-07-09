@@ -146,6 +146,34 @@ export function comboKey(modifiers: string[], key: string): string {
   return modifiers.length === 0 ? key : [...modifiers].sort().join('+') + '+' + key
 }
 
+// Mouse/joystick/gamepad tokens that represent a continuous analog axis (flight-stick
+// pitch/yaw/roll, mouse-look, thumbstick move/look) rather than a discrete press (mouse1/2/3,
+// mwheel_up/down, joystick buttonN, hat1_*, gamepad face buttons a/b/x/y). CIG never gives these
+// a keyboard default, and a generated key press can't emulate an analog value, so any action
+// bound to one of these must stay unbound rather than get a synthetic combo.
+//
+// Gamepad note: bare "x"/"y" are the Xbox-style X/Y face buttons (digital) — NOT axes. Only the
+// "thumb[lr][xy]" tokens (raw thumbstick axis, e.g. thumblx/thumbry) are analog; "thumbl"/"thumbr"
+// alone (stick click) and "thumbl_up"/"_down"/"_left"/"_right" (digital direction) are not.
+const MOUSE_AXIS_TOKENS = new Set(['maxis_x', 'maxis_y', 'maxis_z'])
+const JOYSTICK_AXIS_TOKENS = new Set(['x', 'y', 'z', 'rotx', 'roty', 'rotz', 'slider1', 'slider2'])
+const GAMEPAD_AXIS_TOKENS = new Set(['thumblx', 'thumbly', 'thumbrx', 'thumbry'])
+
+export function isAxisBinding(
+  mouseRaw: string | undefined,
+  joystickRaw: string | undefined,
+  gamepadRaw?: string | undefined,
+): boolean {
+  const mouseToken = mouseRaw?.trim().split('+').pop()
+  const joystickToken = joystickRaw?.trim()
+  const gamepadToken = gamepadRaw?.trim().split('+').pop()
+  return (
+    (!!mouseToken && MOUSE_AXIS_TOKENS.has(mouseToken)) ||
+    (!!joystickToken && JOYSTICK_AXIS_TOKENS.has(joystickToken)) ||
+    (!!gamepadToken && GAMEPAD_AXIS_TOKENS.has(gamepadToken))
+  )
+}
+
 // Returns all context groups an actionmap belongs to.
 // An actionmap in multiple groups is simultaneously active in all of them.
 // Warns if an actionmap isn't classified — add it to CONTEXT_GROUPS.

@@ -1,20 +1,22 @@
 import { describe, it, expect } from 'vitest'
 import { generateMissingBinds } from '../../src/keybindkrafter/generator.js'
 import { validate } from '../../src/keybindkrafter/validator.js'
+import { isAxisBinding } from '../../src/keybindkrafter/config.js'
 import type { SCAction } from '../../src/keybindkrafter/types.js'
 
-function makeAction(name: string, mapName: string, hasKeyboard = false): SCAction {
+function makeAction(name: string, mapName: string, hasKeyboard = false, isAxisAction = false): SCAction {
   return {
     name,
     label: name,
     description: '',
-    category: '',
+    mapCategory: '',
     mapName,
     mapLabel: '',
     activationMode: 'press',
     isToggleCandidate: false,
+    isAxisAction,
     bindings: {
-      keyboard: hasKeyboard ? { device: 'keyboard', input: 'f1', modifiers: [], key: 'f1' } : null,
+      keyboard: hasKeyboard ? { device: 'keyboard', input: 'f1', modifiers: [], key: 'f1', source: 'cig' } : null,
       mouse: null,
       joystick: null,
       gamepad: null,
@@ -63,6 +65,18 @@ describe('generateMissingBinds', () => {
     expect(generated[0].input).toBe(generated[1].input)
   })
 
+  it('never assigns a bind to a mouse/joystick axis action', () => {
+    const actions: SCAction[] = [
+      makeAction('v_pitch_mouse', 'spaceship_movement', false, true),
+      makeAction('v_yaw_mouse', 'spaceship_movement', false, true),
+      makeAction('v_roll', 'spaceship_movement', false, true),
+      makeAction('v_strafe_up', 'spaceship_movement'),
+    ]
+    const generated = generateMissingBinds(actions)
+    expect(generated).toHaveLength(1)
+    expect(generated[0].actionName).toBe('v_strafe_up')
+  })
+
   it('never generates a denied combo', () => {
     const actions: SCAction[] = Array.from({ length: 50 }, (_, i) =>
       makeAction(`action_${i}`, 'spaceship_movement')
@@ -73,6 +87,31 @@ describe('generateMissingBinds', () => {
     for (const combo of denied) {
       expect(generated.map(g => g.input)).not.toContain(combo)
     }
+  })
+})
+
+describe('isAxisBinding', () => {
+  it('recognizes mouse and joystick axis tokens', () => {
+    expect(isAxisBinding('maxis_y', undefined)).toBe(true)
+    expect(isAxisBinding('lalt+maxis_z', undefined)).toBe(true)
+    expect(isAxisBinding('mouse1', undefined)).toBe(false)
+    expect(isAxisBinding(undefined, 'rotz')).toBe(true)
+    expect(isAxisBinding(undefined, 'hat1_left')).toBe(false)
+  })
+
+  it('recognizes bare gamepad thumbstick axes, including with a shoulder modifier', () => {
+    expect(isAxisBinding(undefined, undefined, 'thumblx')).toBe(true)
+    expect(isAxisBinding(undefined, undefined, 'thumbry')).toBe(true)
+    expect(isAxisBinding(undefined, undefined, 'shoulderl+thumblx')).toBe(true)
+  })
+
+  it('does not flag gamepad face buttons or stick clicks/directions as axes', () => {
+    // Bare "x"/"y" are the Xbox-style face buttons — not axes, unlike joystick's bare x/y.
+    expect(isAxisBinding(undefined, undefined, 'x')).toBe(false)
+    expect(isAxisBinding(undefined, undefined, 'y')).toBe(false)
+    expect(isAxisBinding(undefined, undefined, 'thumbl')).toBe(false)
+    expect(isAxisBinding(undefined, undefined, 'thumbl_left')).toBe(false)
+    expect(isAxisBinding(undefined, undefined, 'shoulderl+thumbl')).toBe(false)
   })
 })
 

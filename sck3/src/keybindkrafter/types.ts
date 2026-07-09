@@ -27,6 +27,7 @@ export interface SCAction {
   mapCategory: string  // CIG UICategory on the actionmap element
   activationMode: ActivationMode
   isToggleCandidate: boolean
+  isAxisAction: boolean  // CIG default is a mouse/joystick analog axis — must stay unbound, never generated
   bindings: {
     keyboard: Binding | null
     mouse: Binding | null

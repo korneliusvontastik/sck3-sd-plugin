@@ -77,7 +77,7 @@ function buildKeyMapCsv(allActions: SCAction[], generated: GeneratedBind[]): str
       combo = action.bindings.keyboard.input
       source = action.bindings.keyboard.source
     } else {
-      source = 'unbound'
+      source = action.isAxisAction ? 'axis' : 'unbound'
     }
 
     if (combo) {

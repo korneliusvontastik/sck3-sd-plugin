@@ -27,6 +27,7 @@ export function formatReport(result: RunResult): string {
     lines.push(`  User bound:          ${stats.userBound}`)
     lines.push(`  Filled:              ${stats.filled}`)
     lines.push(`  Unbound:             ${stats.unbound}`)
+    lines.push(`  Axis (skipped):      ${stats.axisSkipped}`)
     lines.push(`  Flagged for testing: ${stats.flaggedForTesting}`)
     lines.push('')
     const inputTotal = stats.conflicts.defaultDefault + stats.conflicts.userDefault + stats.conflicts.userUser

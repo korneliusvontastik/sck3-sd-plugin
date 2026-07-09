@@ -41,7 +41,7 @@ function buildOccupancyFromExisting(actions: SCAction[]): OccupancyMap {
 export function generateMissingBinds(actions: SCAction[]): GeneratedBind[] {
   const occupancy = buildOccupancyFromExisting(actions)
   const results: GeneratedBind[] = []
-  const unbound = actions.filter(a => a.bindings.keyboard === null)
+  const unbound = actions.filter(a => a.bindings.keyboard === null && !a.isAxisAction)
 
   for (const action of unbound) {
     const groups = getGroups(action.mapName)

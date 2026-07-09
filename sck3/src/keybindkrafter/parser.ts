@@ -1,5 +1,6 @@
 import { XMLParser } from 'fast-xml-parser'
 import type { SCAction, ActionMap, ParsedBindings, ActivationMode, Binding } from './types.js'
+import { isAxisBinding } from './config.js'
 
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
@@ -43,13 +44,39 @@ export function parseDefaultProfile(xmlText: string): ParsedBindings {
     const mapLabel: string    = am['@UILabel']      ?? mapName
     const mapCategory: string = am['@UICategory']   ?? ''
     const actions: SCAction[] = []
+    const rawActions = am.action ?? []
 
-    for (const action of am.action ?? []) {
+    // CIG groups alternate input schemes for the same analog axis (HOTAS/mouse/gamepad) under a
+    // shared optionGroup, e.g. "v_pitch" (joystick="y") and "v_pitch_mouse" (mouse="maxis_y") both
+    // carry optionGroup="flight_move_pitch". Some contexts (e.g. ground vehicles) ship the mouse
+    // variant with a blank device slot — still an axis action, just unbound in that context — so a
+    // sibling's axis token proves the whole optionGroup is an axis family.
+    const axisOptionGroups = new Set<string>()
+    for (const action of rawActions) {
+      const og: string | undefined = action['@optionGroup']
+      if (og && isAxisBinding(action['@mouse'], action['@joystick'], action['@gamepad'])) {
+        axisOptionGroups.add(og)
+      }
+    }
+
+    for (const action of rawActions) {
       const actionName: string = action['@name'] ?? ''
       const modeName: string | undefined = action['@activationMode']
       const kbRaw: string | undefined = action['@keyboard']
       const kbBinding = kbRaw ? parseKeyboardInput(kbRaw, 'cig') : null
       if (kbBinding) defaultBoundCount++
+
+      const og: string | undefined = action['@optionGroup']
+      // CIG sometimes puts a digital, onPress/onRelease-triggered nudge action (e.g. v_strafe_up/
+      // v_strafe_down, keyboard="space"/"lctrl") in the *same* optionGroup as its analog sibling
+      // (v_strafe_vertical, gamepad="shoulderl+thumbly") — unlike the pitch/yaw/roll pattern, where
+      // the digital *_up/*_down/*_left/*_right actions sit outside the axis optionGroup entirely.
+      // Group-inherited axis status must not leak onto an action that is structurally digital
+      // (declares onPress/onRelease) — only its own direct device token counts for those.
+      const isDigitalPress = action['@onPress'] !== undefined || action['@onRelease'] !== undefined
+      const isAxisAction =
+        isAxisBinding(action['@mouse'], action['@joystick'], action['@gamepad']) ||
+        (!!og && axisOptionGroups.has(og) && !isDigitalPress)
 
       actions.push({
         name: actionName,
@@ -60,6 +87,7 @@ export function parseDefaultProfile(xmlText: string): ParsedBindings {
         mapCategory,
         activationMode: parseActivationMode(modeName),
         isToggleCandidate: isToggleCandidate(modeName),
+        isAxisAction,
         bindings: { keyboard: kbBinding, mouse: null, joystick: null, gamepad: null },
       })
     }

@@ -30,6 +30,7 @@ export type FinalValidationResult = {
     generated: number
     filled: number
     unbound: number
+    axisSkipped: number
     flaggedForTesting: number
     conflicts: {
       defaultDefault: number
@@ -135,12 +136,13 @@ export function validateFinal(
 
   // Stats — reflect true end state after generation
   const generatedNames = new Set(generated.map(g => g.actionName))
-  let fromCig = 0, fromUser = 0, unbound = 0, flaggedForTesting = 0
+  let fromCig = 0, fromUser = 0, unbound = 0, axisSkipped = 0, flaggedForTesting = 0
 
   for (const action of allActions) {
     const kb = action.bindings.keyboard
     if (!kb) {
-      if (!generatedNames.has(action.name)) unbound++
+      if (action.isAxisAction) axisSkipped++
+      else if (!generatedNames.has(action.name)) unbound++
       continue
     }
     if (kb.source === 'cig') fromCig++
@@ -148,9 +150,10 @@ export function validateFinal(
   }
   flaggedForTesting = generated.filter(g => g.flagForTesting).length
 
-  // Coverage check
+  // Coverage check — axis actions are intentionally excluded from the generator (see
+  // isAxisAction), so their absence isn't a coverage gap.
   for (const action of allActions) {
-    if (!action.bindings.keyboard && !generatedNames.has(action.name)) {
+    if (!action.bindings.keyboard && !generatedNames.has(action.name) && !action.isAxisAction) {
       issues.push({ severity: 'error', action: action.name, mapName: action.mapName, message: 'No keyboard bind — not covered by CIG, user, or generator' })
     }
   }
@@ -235,8 +238,9 @@ export function validateFinal(
       fromCig,
       fromUser,
       generated: generated.length,
-      filled: allActions.length - unbound,
+      filled: allActions.length - unbound - axisSkipped,
       unbound,
+      axisSkipped,
       flaggedForTesting,
       conflicts: {
         defaultDefault,
