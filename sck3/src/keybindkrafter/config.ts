@@ -16,7 +16,7 @@ export const CANDIDATE_KEYS: string[] = [
   'np_0','np_1','np_2','np_3','np_4','np_5','np_6','np_7','np_8','np_9',
   'np_period','np_divide','np_multiply','np_subtract','np_add','np_enter',
   // T6 — Navigation cluster
-  'insert','delete','home','end','pageup','pagedown',
+  'insert','delete','home','end','pgup','pgdn',
   // T7 — Arrows
   'up','down','left','right',
 ]

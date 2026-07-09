@@ -37,7 +37,7 @@ const KEY_TIER_LABEL: Record<string, string> = (() => {
   const punct = ['minus', 'equals', 'lbracket', 'rbracket', 'backslash', 'semicolon', 'apostrophe', 'grave', 'comma', 'period', 'slash']
   const fkeys = ['f1', 'f2', 'f3', 'f4', 'f5', 'f6', 'f7', 'f8', 'f9', 'f10', 'f11', 'f12']
   const numpad = ['np_0', 'np_1', 'np_2', 'np_3', 'np_4', 'np_5', 'np_6', 'np_7', 'np_8', 'np_9', 'np_period', 'np_divide', 'np_multiply', 'np_subtract', 'np_add', 'np_enter']
-  const nav = ['insert', 'delete', 'home', 'end', 'pageup', 'pagedown']
+  const nav = ['insert', 'delete', 'home', 'end', 'pgup', 'pgdn']
   const arrows = ['up', 'down', 'left', 'right']
   const out: Record<string, string> = {}
   for (const k of letters) out[k] = '1_letters'

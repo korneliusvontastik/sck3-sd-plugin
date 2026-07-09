@@ -35,6 +35,8 @@ Community creators who built Star Citizen + Stream Deck tools before this plugin
 | CLI Reference | https://docs.elgato.com/streamdeck/cli/intro |
 | SDK GitHub Repo | https://github.com/elgatosf/streamdeck |
 | Plugin Samples | https://github.com/elgatosf/streamdeck-plugin-samples |
+| Product Gallery Guidelines | https://docs.elgato.com/guidelines/products/#gallery
+| KEYBDINPUT structure |https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-keybdinput
 
 ## Prerequisites
 
