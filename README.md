@@ -10,6 +10,8 @@ Star Citizen has over 1,000 bindable actions spread across ships, on-foot combat
 
 [![Watch the video](https://img.youtube.com/vi/BITfzvxfX8Q/maxresdefault.jpg)](https://www.youtube.com/watch?v=BITfzvxfX8Q)
 
+▶️ [Watch on YouTube](https://www.youtube.com/watch?v=BITfzvxfX8Q)
+
 ## Features
 
 - **Keybind Auto-Fill** — reads Star Citizen's full action list and your current keybinds, then generates a complete profile and writes it straight to `actionmaps.xml`.
