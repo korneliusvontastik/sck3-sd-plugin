@@ -6,6 +6,10 @@
 
 Star Citizen has over 1,000 bindable actions spread across ships, on-foot combat, mining, trading, and more — far more than any keyboard shortcut can keep at your fingertips. SCK3 puts that entire action space on your Elgato Stream Deck. Since Star Citizen exposes no official game API, SCK3 reads the game's own keybind configuration directly, so every button on your deck stays in sync with your actual in-game binds — no manual re-mapping, no drift between game and deck.
 
+## Demo
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/BITfzvxfX8Q?si=Ydb2gYuReuVeGECY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 ## Features
 
 - **Keybind Auto-Fill** — reads Star Citizen's full action list and your current keybinds, then generates a complete profile and writes it straight to `actionmaps.xml`.
