@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0.2] - 2026-07-10
+
+### Fixed
+
+- **Keybind Auto-Fill** custom-profile export (`Controls/Mappings/*.xml`) now uses Star Citizen's actual importable-profile schema — a flat `<ActionMaps>` root with a `CustomisationUIHeader`/`devices` block — instead of the nested `<ActionMaps><ActionProfiles>` shape meant for the live `actionmaps.xml`. The previous shape imported silently with no error but never showed up as an importable profile in-game.
+
 ## [0.1.0.1] - 2026-07-09
 
 ### Fixed
