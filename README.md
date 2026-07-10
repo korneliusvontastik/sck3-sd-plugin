@@ -8,7 +8,7 @@ Star Citizen has over 1,000 bindable actions spread across ships, on-foot combat
 
 ## Demo
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BITfzvxfX8Q?si=Ydb2gYuReuVeGECY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+[![Watch the video]([https://youtube.com](https://www.youtube.com/embed/BITfzvxfX8Q?si=Ydb2gYuReuVeGECY))]([https://youtu.be](https://www.youtube.com/embed/BITfzvxfX8Q?si=Ydb2gYuReuVeGECY))
 
 ## Features
 
