@@ -1,4 +1,4 @@
-# SCK3 — Star Citizen Kommand Kontrol Kit for Stream Deck
+# SCK3 — Star Citizen Kommand Kontrol Kit for Elgato Stream Deck
 
 <img src="assets/branding/Github_Banner.png" alt="SCK3 Star Citizen Kommand Kontrol Kit Banner">
 
