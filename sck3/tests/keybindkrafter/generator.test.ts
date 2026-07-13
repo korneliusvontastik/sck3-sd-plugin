@@ -112,6 +112,33 @@ describe('generateMissingBinds', () => {
     expect(generated.map(g => g.input)).not.toContain('np_enter')
   })
 
+  it('never generates grave in any modifier combo — CIG hardcodes it as the console toggle', () => {
+    // Mirrors the reported bug: v_deploy_landing_system has keyboard=" " (CIG default unbound) and
+    // got auto-filled to lctrl+grave, which still opened the dev console in-game because CIG's
+    // console toggle fires on the raw key regardless of held modifiers.
+    const actions: SCAction[] = Array.from({ length: 60 }, (_, i) =>
+      makeAction(`action_${i}`, 'spaceship_movement')
+    )
+    const generated = generateMissingBinds(actions)
+    expect(generated.some(g => g.input.split('+').pop() === 'grave')).toBe(false)
+  })
+
+  it('treats player_choice as occupying spaceship_vehicles combos too, since its pc_pit_* interaction-wheel actions are usable while seated', () => {
+    // Mirrors the reported bug: v_target_toggle_pin_index_2 (spaceship_targeting, CIG default
+    // lalt+2) and the unbound pc_pit_player_actions (player_choice) used to be treated as
+    // non-overlapping (spaceship_vehicles vs foot), so the generator handed pc_pit_player_actions
+    // the same lalt+2 CIG already uses for targeting pin 2 — silently double-bound in-game.
+    const pinned = makeAction('v_target_toggle_pin_index_2', 'spaceship_targeting', false)
+    pinned.bindings.keyboard = { device: 'keyboard', input: 'lalt+2', modifiers: ['lalt'], key: '2', source: 'cig' }
+
+    const actions: SCAction[] = [pinned, makeAction('pc_pit_player_actions', 'player_choice')]
+    const generated = generateMissingBinds(actions)
+
+    expect(generated).toHaveLength(1)
+    expect(generated[0].actionName).toBe('pc_pit_player_actions')
+    expect(generated[0].input).not.toBe('lalt+2')
+  })
+
   it('never generates a denied combo', () => {
     const actions: SCAction[] = Array.from({ length: 50 }, (_, i) =>
       makeAction(`action_${i}`, 'spaceship_movement')

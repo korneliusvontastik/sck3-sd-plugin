@@ -74,9 +74,13 @@ export const LSHIFT_MOVEMENT_KEYS = new Set(['w','a','s','d','q','e'])
 // records in each action's `reservedCombos`. Since `default` is active in every context group,
 // `np_enter` ends up correctly unavailable everywhere without needing a static ban here — see
 // docs/keybinds.md.
+// `grave` is banned for the same reason: CIG hardcodes it as the dev console toggle at the engine
+// level, outside the actionmaps system entirely — it has no entry anywhere in defaultProfile.xml,
+// so nothing in CIG's own data flags it as taken. It fires on the raw key regardless of held
+// modifiers, so this bans it as a main key under every modifier combo, not just bare.
 export const FORBIDDEN_KEYS = new Set([
   'f13','f14','f15','f16','f17','f18','f19','f20','f21','f22','f23','f24',
-  'contextmenu','lwin','rwin','ralt',
+  'contextmenu','lwin','rwin','ralt','grave',
   'space','tab','enter','backspace','escape',
   'capslock','numlock','scrolllock',
 ])
@@ -122,6 +126,10 @@ export const CONTEXT_GROUPS: Record<GroupName, string[]> = {
     'vehicle_general','vehicle_weapons','vehicle_driver','vehicle_mfd','vehicle_mobiglas',
     // Ship/vehicle tools
     'mining','tractor_beam',
+    // player_choice also lives here: its pc_pit_* actions are the interaction-wheel categories
+    // (ship systems, flight systems, vehicle actions, remote turrets, mining mode) used while
+    // seated, so its combo space overlaps spaceship/vehicle binds, not just foot ones.
+    'player_choice',
     // Active in all contexts
     'default','flycam','debug','server_renderer',
     'view_director_mode','RemoteRigidEntityController',
