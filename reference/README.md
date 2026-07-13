@@ -14,7 +14,7 @@ Generate it with:
 npx tsx scripts/extract-default-profile.ts [path/to/Data.p4k]
 ```
 
-**Never commit this file.** It's CIG's data, not ours — see `.gitignore`.
+**Never commit this file.** It's CIG's data — see `.gitignore`.
 
 ## Not to be confused with `sck3/tests/keybindkrafter/fixtures/defaultProfile.sample.xml`
 
