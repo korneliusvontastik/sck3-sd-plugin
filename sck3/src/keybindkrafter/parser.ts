@@ -1,6 +1,6 @@
 import { XMLParser } from 'fast-xml-parser'
 import type { SCAction, ActionMap, ParsedBindings, ActivationMode, Binding } from './types.js'
-import { isAxisBinding } from './config.js'
+import { isAxisBinding, comboKey } from './config.js'
 
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
@@ -67,9 +67,23 @@ export function parseDefaultProfile(xmlText: string): ParsedBindings {
       // element instead of a keyboard="..." attribute — take the first inputdata as the primary
       // bind. Without this, those actions look unbound and the generator overwrites their
       // (correct) default with a freshly assigned combo.
-      const kbRaw: string | undefined = action['@keyboard'] ?? action.keyboard?.inputdata?.[0]?.['@input']
+      const inputDataList = action.keyboard?.inputdata as { '@input'?: string }[] | undefined
+      const kbRaw: string | undefined = action['@keyboard'] ?? inputDataList?.[0]?.['@input']
       const kbBinding = kbRaw ? parseKeyboardInput(kbRaw, 'cig') : null
       if (kbBinding) defaultBoundCount++
+
+      // CIG sometimes declares more than one <inputdata> as alternates for the same action, e.g.
+      // <inputdata input="enter"/><inputdata input="np_enter"/> — both keys trigger it in-game.
+      // The primary Binding above only captures the first; the rest are recorded here so the
+      // generator/validator's occupancy tracking knows those keys are already spoken for, even
+      // though we never assign, serialize, or display them as this action's "real" bind.
+      const reservedCombos = (inputDataList ?? [])
+        .slice(1)
+        .map(d => d['@input'])
+        .filter((raw): raw is string => !!raw)
+        .map(raw => parseKeyboardInput(raw, 'cig'))
+        .filter((b): b is Binding => b !== null)
+        .map(b => comboKey(b.modifiers, b.key))
 
       const og: string | undefined = action['@optionGroup']
       // CIG sometimes puts a digital, onPress/onRelease-triggered nudge action (e.g. v_strafe_up/
@@ -94,6 +108,7 @@ export function parseDefaultProfile(xmlText: string): ParsedBindings {
         isToggleCandidate: isToggleCandidate(modeName),
         isAxisAction,
         bindings: { keyboard: kbBinding, mouse: null, joystick: null, gamepad: null },
+        reservedCombos: reservedCombos.length ? reservedCombos : undefined,
       })
     }
 

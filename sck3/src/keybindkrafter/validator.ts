@@ -61,12 +61,15 @@ export function validateGenerated(
   // Build occupancy from existing (cig + user) binds
   const occupancy = new Map<GroupName, Map<string, string>>() // group → combo → actionName
   for (const action of allActions) {
+    const groups = getGroups(action.mapName)
+    const ref = `${action.mapName}/${action.name}`
     const kb = action.bindings.keyboard
-    if (!kb) continue
-    const combo = comboKey(kb.modifiers, kb.key)
-    for (const group of getGroups(action.mapName)) {
-      if (!occupancy.has(group)) occupancy.set(group, new Map()) // set() on the line above guarantees this
-      occupancy.get(group)!.set(combo, `${action.mapName}/${action.name}`)
+    const combos = kb ? [comboKey(kb.modifiers, kb.key), ...(action.reservedCombos ?? [])] : (action.reservedCombos ?? [])
+    for (const combo of combos) {
+      for (const group of groups) {
+        if (!occupancy.has(group)) occupancy.set(group, new Map()) // set() on the line above guarantees this
+        occupancy.get(group)!.set(combo, ref)
+      }
     }
   }
 
@@ -165,10 +168,21 @@ export function validateFinal(
   let defaultDefault = 0, userDefault = 0, userUser = 0
 
   for (const action of allActions) {
+    const groups = getGroups(action.mapName)
+    const ref = `${action.mapName}/${action.name}`
+
+    for (const reserved of action.reservedCombos ?? []) {
+      for (const group of groups) {
+        if (!occupancy.has(group)) occupancy.set(group, new Map()) // set() on the line above guarantees this
+        const bucket = occupancy.get(group)!
+        if (!bucket.has(reserved)) bucket.set(reserved, { ref, source: 'cig' })
+      }
+    }
+
     const kb = action.bindings.keyboard
     if (!kb || kb.source === 'generated') continue
     const combo = comboKey(kb.modifiers, kb.key)
-    for (const group of getGroups(action.mapName)) {
+    for (const group of groups) {
       if (!occupancy.has(group)) occupancy.set(group, new Map()) // set() on the line above guarantees this
       const bucket = occupancy.get(group)!
       const existing = bucket.get(combo)
@@ -187,7 +201,7 @@ export function validateFinal(
           message: `${kb.source}/${existing.source} collision: ${combo} also used by ${existing.ref} in group "${group}"`,
         })
       } else {
-        bucket.set(combo, { ref: `${action.mapName}/${action.name}`, source: kb.source })
+        bucket.set(combo, { ref, source: kb.source })
       }
     }
   }

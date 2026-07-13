@@ -72,6 +72,24 @@ describe('parseDefaultProfile', () => {
     expect(byName.get('v_strafe_down')?.isAxisAction).toBe(false)
   })
 
+  it('keeps the first <inputdata> as the primary bind and records the rest as reservedCombos', () => {
+    // ui_textfield_enter declares <inputdata input="enter"/><inputdata input="np_enter"/> —
+    // both keys fire it in-game, but only the first becomes the assignable Binding.
+    const parsed = parseBindings(defaultProfileXml)
+    const actions = flattenActions(parsed)
+    const byName = new Map(actions.map(a => [a.name, a]))
+    const action = byName.get('ui_textfield_enter')
+    expect(action?.bindings.keyboard?.key).toBe('enter')
+    expect(action?.reservedCombos).toEqual(['np_enter'])
+  })
+
+  it('leaves reservedCombos undefined for actions with a single keyboard bind', () => {
+    const parsed = parseBindings(defaultProfileXml)
+    const actions = flattenActions(parsed)
+    const byName = new Map(actions.map(a => [a.name, a]))
+    expect(byName.get('v_strafe_up')?.reservedCombos).toBeUndefined()
+  })
+
   it('flags gamepad thumbstick axes as axis actions, but not face buttons', () => {
     // gp_movex/gp_movey (gamepad="thumblx"/"thumbly") have no mouse/joystick sibling in their
     // optionGroup to inherit axis-ness from (moveleft/moveright carry no optionGroup at all) —

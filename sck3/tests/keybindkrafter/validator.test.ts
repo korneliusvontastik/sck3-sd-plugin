@@ -1,8 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { validateFinal } from '../../src/keybindkrafter/validator.js'
+import { validateFinal, validateGenerated } from '../../src/keybindkrafter/validator.js'
 import type { SCAction, GeneratedBind, Binding, BindingSource } from '../../src/keybindkrafter/types.js'
 
-function makeAction(name: string, mapName: string, binding: Binding | null, isAxisAction = false): SCAction {
+function makeAction(
+  name: string,
+  mapName: string,
+  binding: Binding | null,
+  isAxisAction = false,
+  reservedCombos?: string[],
+): SCAction {
   return {
     name,
     label: name,
@@ -14,6 +20,7 @@ function makeAction(name: string, mapName: string, binding: Binding | null, isAx
     isToggleCandidate: false,
     isAxisAction,
     bindings: { keyboard: binding, mouse: null, joystick: null, gamepad: null },
+    reservedCombos,
   }
 }
 
@@ -123,6 +130,25 @@ describe('validateFinal — conflict categorization', () => {
     expect(result.stats.axisSkipped).toBe(1)
     expect(result.stats.filled).toBe(1)
     expect(result.issues.filter(i => i.severity === 'error')).toHaveLength(0)
+  })
+
+  it('flags a generated bind colliding with a reserved CIG default alternate as outputVsExisting', () => {
+    // Mirrors focus_on_chat_textinput: primary bind is "enter", but "np_enter" is also reserved.
+    const actions = [
+      makeAction('focus_on_chat_textinput', 'spaceship_movement', kb('enter', 'cig'), false, ['np_enter']),
+      makeAction('some_weapon_action', 'spaceship_movement', null),
+    ]
+    const generated: GeneratedBind[] = [
+      { actionName: 'some_weapon_action', mapName: 'spaceship_movement', input: 'np_enter', flagForTesting: false },
+    ]
+
+    const finalResult = validateFinal(actions, generated)
+    expect(finalResult.stats.conflicts.outputVsExisting).toBe(1)
+    expect(finalResult.issues.some(i => i.severity === 'error' && i.kind === 'generated')).toBe(true)
+
+    const generatedResult = validateGenerated(actions, generated)
+    expect(generatedResult.valid).toBe(false)
+    expect(generatedResult.issues.some(i => i.severity === 'error')).toBe(true)
   })
 
   it('sums all conflict categories into conflicts.total', () => {

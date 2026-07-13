@@ -12,4 +12,8 @@
     <action name="gp_jump" activationMode="press" gamepad="a" UILabel="@ui_CIFPSMoveJump" UIDescription="@ui_CIFPSMoveJumpDesc"></action>
     <action name="attack1" activationMode="all" mouse="mouse1" keyboard="" gamepad="triggerr_btn" joystick="" UILabel="@ui_CIFPSAttack1" UIDescription="@ui_CIFPSAttack1Desc"></action>
   </actionmap>
+  <actionmap name="ui_textfield" version="1">
+    <action name="ui_textfield_enter" onPress="1" onRelease="1"><keyboard><inputdata input="enter"/><inputdata input="np_enter"/></keyboard></action>
+    <action name="ui_textfield_backspace" onPress="1" onHold="1" onRelease="1" keyboard="backspace"></action>
+  </actionmap>
 </profile>

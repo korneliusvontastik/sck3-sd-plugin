@@ -68,6 +68,12 @@ export const FLAG_FOR_TESTING = new Set(['rshift', 'rctrl'])
 export const LSHIFT_MOVEMENT_KEYS = new Set(['w','a','s','d','q','e'])
 
 // Keys forbidden as the main key
+// Note: `enter` is banned outright here, but its numpad twin `np_enter` deliberately is NOT — CIG's
+// own `default`-map actions (flashui_return, focus_on_chat_textinput) already declare it as a
+// keyboard alternate (<inputdata input="enter"/><inputdata input="np_enter"/>), which parser.ts
+// records in each action's `reservedCombos`. Since `default` is active in every context group,
+// `np_enter` ends up correctly unavailable everywhere without needing a static ban here — see
+// docs/keybinds.md.
 export const FORBIDDEN_KEYS = new Set([
   'f13','f14','f15','f16','f17','f18','f19','f20','f21','f22','f23','f24',
   'contextmenu','lwin','rwin','ralt',

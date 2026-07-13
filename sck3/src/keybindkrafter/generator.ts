@@ -29,11 +29,10 @@ function markOccupied(occupancy: OccupancyMap, groups: GroupName[], combo: strin
 function buildOccupancyFromExisting(actions: SCAction[]): OccupancyMap {
   const occupancy: OccupancyMap = new Map()
   for (const action of actions) {
-    const kb = action.bindings.keyboard
-    if (!kb) continue
     const groups = getGroups(action.mapName)
-    const combo = comboKey(kb.modifiers, kb.key)
-    markOccupied(occupancy, groups, combo)
+    const kb = action.bindings.keyboard
+    if (kb) markOccupied(occupancy, groups, comboKey(kb.modifiers, kb.key))
+    for (const reserved of action.reservedCombos ?? []) markOccupied(occupancy, groups, reserved)
   }
   return occupancy
 }

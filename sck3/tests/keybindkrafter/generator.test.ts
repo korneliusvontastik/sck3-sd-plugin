@@ -1,10 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import { generateMissingBinds } from '../../src/keybindkrafter/generator.js'
 import { validate } from '../../src/keybindkrafter/validator.js'
-import { isAxisBinding } from '../../src/keybindkrafter/config.js'
+import { isAxisBinding, CANDIDATE_KEYS } from '../../src/keybindkrafter/config.js'
 import type { SCAction } from '../../src/keybindkrafter/types.js'
 
-function makeAction(name: string, mapName: string, hasKeyboard = false, isAxisAction = false): SCAction {
+function makeAction(
+  name: string,
+  mapName: string,
+  hasKeyboard = false,
+  isAxisAction = false,
+  reservedCombos?: string[],
+): SCAction {
   return {
     name,
     label: name,
@@ -21,7 +27,15 @@ function makeAction(name: string, mapName: string, hasKeyboard = false, isAxisAc
       joystick: null,
       gamepad: null,
     },
+    reservedCombos,
   }
+}
+
+// A bound action occupying an exact bare key, for tests that need to fill specific candidate slots.
+function makeBoundAction(name: string, mapName: string, key: string): SCAction {
+  const action = makeAction(name, mapName, true)
+  action.bindings.keyboard = { device: 'keyboard', input: key, modifiers: [], key, source: 'cig' }
+  return action
 }
 
 describe('generateMissingBinds', () => {
@@ -75,6 +89,27 @@ describe('generateMissingBinds', () => {
     const generated = generateMissingBinds(actions)
     expect(generated).toHaveLength(1)
     expect(generated[0].actionName).toBe('v_strafe_up')
+  })
+
+  it('never assigns a combo reserved as a CIG default keyboard alternate', () => {
+    // Occupy every bare-key candidate before "np_enter" in CANDIDATE_KEYS order, then reserve
+    // "np_enter" itself via reservedCombos (mirrors CIG's real enter/np_enter alternate pair on
+    // focus_on_chat_textinput). The next unbound action must skip straight past it.
+    const npEnterIndex = CANDIDATE_KEYS.indexOf('np_enter')
+    const occupied = CANDIDATE_KEYS.slice(0, npEnterIndex)
+    const nextFreeKey = CANDIDATE_KEYS[npEnterIndex + 1]
+
+    const actions: SCAction[] = [
+      ...occupied.map((key, i) => makeBoundAction(`occupy_${i}`, 'spaceship_movement', key)),
+      makeAction('focus_on_chat_textinput', 'spaceship_movement', true, false, ['np_enter']),
+      makeAction('some_weapon_action', 'spaceship_movement'),
+    ]
+
+    const generated = generateMissingBinds(actions)
+    expect(generated).toHaveLength(1)
+    expect(generated[0].actionName).toBe('some_weapon_action')
+    expect(generated[0].input).toBe(nextFreeKey)
+    expect(generated.map(g => g.input)).not.toContain('np_enter')
   })
 
   it('never generates a denied combo', () => {

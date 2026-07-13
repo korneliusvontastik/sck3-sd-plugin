@@ -80,6 +80,37 @@ Neither has a `keyboard=` attribute — CIG never gave them one. Naively treatin
 
 ---
 
+## CIG Actions With More Than One Default Key (`reservedCombos`)
+
+A handful of CIG default actions declare more than one `<inputdata>` alternate for the same
+keyboard bind, e.g.:
+
+```xml
+<action name="focus_on_chat_textinput" ...>
+  <keyboard><inputdata input="enter"/><inputdata input="np_enter"/></keyboard>
+</action>
+```
+
+Both `enter` and `np_enter` fire this action in-game — CIG treats them as interchangeable. Exactly
+three real actions use this pattern: `flashui_return` and `focus_on_chat_textinput` (actionmap
+`default`) and `ui_textfield_enter` (actionmap `ui_textfield`).
+
+`parser.ts` keeps the *first* `<inputdata>` as the action's real, assignable `Binding` — unchanged
+from before — but now also records every remaining alternate in `SCAction.reservedCombos`. This
+field is occupancy-only: it's never assigned to another action, never serialized, never shown as
+"the" bind for that action. The generator (`buildOccupancyFromExisting` in `generator.ts`) and both
+validator passes (`validator.ts`) mark every `reservedCombos` entry as occupied in the same context
+groups as the action's primary bind, so a later action can never be handed a key that's secretly
+already wired to something else.
+
+This is why `np_enter` is absent from `FORBIDDEN_KEYS` (config.ts) despite bare `enter` being banned
+there outright: `default` is cross-listed into every context group (see below), so once
+`reservedCombos` correctly flags `np_enter` as occupied for `focus_on_chat_textinput`, it's
+unavailable everywhere the generator runs — without a static ban that would also block it in some
+hypothetical future profile where CIG drops the alternate.
+
+---
+
 ## Assignment Logic (overview)
 
 The generator iterates every unbound action and finds the first available combo:
@@ -91,6 +122,7 @@ for each unbound action:
       skip if key is forbidden
       skip if combo is on the deny list
       skip if combo is occupied in any context group this action belongs to
+      skip if combo is reserved (a CIG default's secondary keyboard alternate) in any context group this action belongs to
       → assign and mark occupied across all relevant groups
 ```
 

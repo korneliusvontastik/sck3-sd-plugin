@@ -48,6 +48,14 @@ const KNOWN_DIGITAL_ACTIONS = [
   ['player', 'gp_jump'],
 ] as const
 
+// The 3 real CIG actions confirmed to declare enter + np_enter as keyboard alternates — see
+// docs/keybinds.md § "CIG Actions With More Than One Default Key".
+const KNOWN_ENTER_ALTERNATE_ACTIONS = [
+  ['default', 'flashui_return'],
+  ['default', 'focus_on_chat_textinput'],
+  ['ui_textfield', 'ui_textfield_enter'],
+] as const
+
 describe.skipIf(!hasRealProfile)('parseDefaultProfile — real defaultProfile.xml', () => {
   const xml = hasRealProfile ? readFileSync(REAL_PROFILE_PATH, 'utf-8') : ''
 
@@ -79,6 +87,22 @@ describe.skipIf(!hasRealProfile)('parseDefaultProfile — real defaultProfile.xm
     for (const [mapName, name] of KNOWN_AXIS_ACTIONS) {
       expect(generatedKeys.has(`${mapName}/${name}`), `${mapName}/${name}`).toBe(false)
     }
+  })
+
+  it('records np_enter as a reservedCombo on every known enter/np_enter alternate action', () => {
+    const actions = flattenActions(parseBindings(xml))
+    const byKey = new Map(actions.map(a => [`${a.mapName}/${a.name}`, a]))
+    for (const [mapName, name] of KNOWN_ENTER_ALTERNATE_ACTIONS) {
+      const action = byKey.get(`${mapName}/${name}`)
+      expect(action?.bindings.keyboard?.key, `${mapName}/${name} primary`).toBe('enter')
+      expect(action?.reservedCombos, `${mapName}/${name} reservedCombos`).toContain('np_enter')
+    }
+  })
+
+  it('never generates np_enter for any action — regression test for the reported weapon-change bug', () => {
+    const actions = flattenActions(parseBindings(xml))
+    const generated = generateMissingBinds(actions)
+    expect(generated.some(g => g.input === 'np_enter')).toBe(false)
   })
 
   it('produces no coverage errors against the full real action set', () => {

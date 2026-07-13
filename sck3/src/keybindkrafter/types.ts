@@ -34,6 +34,10 @@ export interface SCAction {
     joystick: Binding | null
     gamepad: Binding | null
   }
+  // Additional CIG-default keyboard alternates beyond the primary bind (e.g. `np_enter` when the
+  // primary is `enter`, from CIG's <keyboard><inputdata/><inputdata/></keyboard> form). Occupancy-only:
+  // never assigned, serialized, or shown as this action's real bind.
+  reservedCombos?: string[]
 }
 
 export interface ActionMap {
