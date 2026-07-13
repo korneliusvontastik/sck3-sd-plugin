@@ -5,7 +5,7 @@ import { isAxisBinding } from './config.js'
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@',
-  isArray: (name) => ['actionmap', 'action', 'rebind', 'ActivationMode'].includes(name),
+  isArray: (name) => ['actionmap', 'action', 'rebind', 'ActivationMode', 'inputdata'].includes(name),
 })
 
 // ─── DefaultProfile parsing ──────────────────────────────────────────────────
@@ -62,7 +62,12 @@ export function parseDefaultProfile(xmlText: string): ParsedBindings {
     for (const action of rawActions) {
       const actionName: string = action['@name'] ?? ''
       const modeName: string | undefined = action['@activationMode']
-      const kbRaw: string | undefined = action['@keyboard']
+      // A handful of default actions (e.g. focus_on_chat_textinput, ui_textfield_enter) declare
+      // their keyboard default as a <keyboard><inputdata input="enter"/>...</keyboard> child
+      // element instead of a keyboard="..." attribute — take the first inputdata as the primary
+      // bind. Without this, those actions look unbound and the generator overwrites their
+      // (correct) default with a freshly assigned combo.
+      const kbRaw: string | undefined = action['@keyboard'] ?? action.keyboard?.inputdata?.[0]?.['@input']
       const kbBinding = kbRaw ? parseKeyboardInput(kbRaw, 'cig') : null
       if (kbBinding) defaultBoundCount++
 
