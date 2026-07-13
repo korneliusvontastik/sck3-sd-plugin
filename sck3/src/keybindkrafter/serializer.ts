@@ -16,6 +16,15 @@ const BUILDER_OPTS = {
   suppressEmptyNode: false,
 }
 
+// SC's own exported custom profiles (Options > Keybindings > Export) self-close empty elements
+// (<modifiers/>, <rebind .../>) and carry no XML declaration — confirmed against a real in-game
+// export. Matching that byte-for-byte isn't required for import to work, but it keeps our output
+// indistinguishable from a genuine SC export, which is the point of this format.
+const CUSTOM_PROFILE_BUILDER_OPTS = {
+  ...BUILDER_OPTS,
+  suppressEmptyNode: true,
+}
+
 const XML_DECL = `<?xml version="1.0" encoding="utf-8"?>\n`
 
 // Action names are only unique *within* an actionmap — 74 names in the real defaultProfile.xml
@@ -70,10 +79,19 @@ function buildFinalKbMap(
  *
  * This is a *different* schema from the live actionmaps.xml (see mergeGeneratedIntoActionMaps):
  * a flat <ActionMaps> root carrying the version/profileName attributes directly, with a
- * <CustomisationUIHeader><devices>...</devices></CustomisationUIHeader> block — not the nested
+ * <CustomisationUIHeader><devices>...<categories>...</CustomisationUIHeader> block — not the nested
  * <ActionMaps><ActionProfiles>...<options>...</ActionProfiles></ActionMaps> shape SC itself writes
  * to actionmaps.xml. Reusing that nested shape here silently fails to import — confirmed against a
  * known-good hand file (SC gives no error, it just doesn't show up as importable).
+ *
+ * <devices> always declares keyboard+mouse+joystick instance 1, regardless of what's actually
+ * plugged in — SC only uses this to know which device namespaces to expect, not to validate
+ * hardware, and a real export lists all three unconditionally. <categories> lists each included
+ * actionmap's UICategory (from defaultProfile.xml), deduped, in first-seen order — this drives
+ * which tabs SC's own rebind UI shows when the profile is loaded there. Deliberately omits the
+ * top-level <options type="keyboard|joystick" Product="..."/> block real exports carry: those
+ * encode the exporting machine's actual hardware GUIDs, which we have no way to know and would be
+ * actively wrong to fabricate.
  */
 export function serializeCustomProfile(
   parsed: ParsedBindings,
@@ -84,9 +102,14 @@ export function serializeCustomProfile(
   const kbFinal = buildFinalKbMap(allActions, generated)
 
   const actionmapNodes = []
+  const categories: string[] = []
+  const seenCategories = new Set<string>()
   for (const am of parsed.actionMaps) {
     const actionNodes = []
-    for (const action of am.actions) {
+    // SC's own exports list an actionmap's <action> entries alphabetically by name, not in
+    // defaultProfile.xml's declaration order — confirmed against a real in-game export.
+    const sortedActions = [...am.actions].sort((a, b) => a.name.localeCompare(b.name))
+    for (const action of sortedActions) {
       const bind = kbFinal.get(actionKey(am.name, action.name))
       if (!bind) continue
       actionNodes.push({
@@ -96,6 +119,10 @@ export function serializeCustomProfile(
     }
     if (actionNodes.length > 0) {
       actionmapNodes.push({ '@name': am.name, action: actionNodes })
+      if (!seenCategories.has(am.category)) {
+        seenCategories.add(am.category)
+        categories.push(am.category)
+      }
     }
   }
 
@@ -111,6 +138,11 @@ export function serializeCustomProfile(
         '@image': '',
         devices: {
           keyboard: [{ '@instance': '1' }],
+          mouse: [{ '@instance': '1' }],
+          joystick: [{ '@instance': '1' }],
+        },
+        categories: {
+          category: categories.map(label => ({ '@label': label })),
         },
       },
       modifiers: '',
@@ -118,7 +150,7 @@ export function serializeCustomProfile(
     },
   }
 
-  return XML_DECL + new XMLBuilder(BUILDER_OPTS).build(doc)
+  return new XMLBuilder(CUSTOM_PROFILE_BUILDER_OPTS).build(doc)
 }
 
 /**

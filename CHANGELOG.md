@@ -4,6 +4,13 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0.3] - 2026-07-13
+
+### Fixed
+
+- **Keybind Auto-Fill** custom-profile export now matches Star Citizen's actual export formatting: self-closing tags, no XML declaration, `keyboard`/`mouse`/`joystick` always listed under `devices`, a `categories` block, and actions sorted alphabetically within each actionmap — verified against a real in-game export.
+- **Keybind Auto-Fill** now correctly reads keyboard defaults declared via `<keyboard><inputdata input="..."/></keyboard>` (used by a handful of actions like `focus_on_chat_textinput`), instead of treating them as unbound and overwriting them.
+
 ## [0.1.0.2] - 2026-07-10
 
 ### Fixed
