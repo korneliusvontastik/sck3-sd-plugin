@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.1.0.4] - 2026-07-13
+
+### Fixed
+
+- **Keybind Auto-Fill** no longer hands `np_enter` (Numpad Enter) to an unrelated action. CIG declares `enter`/`np_enter` as keyboard alternates on a few actions (`focus_on_chat_textinput`, `flashui_return`, `ui_textfield_enter`) via two `<inputdata>` entries, but only the first was tracked as occupied — so the generator could freely assign `np_enter` elsewhere, making physical Numpad Enter fire two actions at once (reported: it also triggered a weapon change).
+- **Keybind Auto-Fill** no longer assigns `` grave `` (the backtick/tilde key) to any action, under any modifier. CIG hardcodes it as the dev console toggle at the engine level — it has no entry in `defaultProfile.xml` at all, so the generator had no way to know it was taken. Previously it could assign combos like `lctrl+grave` to an unbound action (reported: `v_deploy_landing_system`), which still opened the console in-game instead of the intended action.
+- **Keybind Auto-Fill** no longer double-books `lalt+2`/`lalt+3`-style combos between the interaction-wheel ("PIT") menu and ship/vehicle actions. `player_choice`'s `pc_pit_*` actions (ship systems, flight systems, vehicle actions, remote turrets, mining mode) are reachable while seated in a ship, but were only tracked as occupying the `foot` context — so the generator could hand them combos CIG already reserves in `spaceship_vehicles` (reported: pressing `lalt+2`/`lalt+3` opened the PIT menu instead of toggling targeting pins 2/3).
+
 ## [0.1.0.3] - 2026-07-13
 
 ### Fixed
