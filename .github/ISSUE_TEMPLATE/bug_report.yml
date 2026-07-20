@@ -1,0 +1,88 @@
+name: Bug Report
+description: Report something not working as expected
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: feature
+    attributes:
+      label: Feature
+      description: Which part of the plugin is affected?
+      options:
+        - General
+        - Keybind Auto-Fill
+        - Channel Indicator
+        - Open Logs
+        - Other
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
+      description: Give it a short title, then describe what happened, how to reproduce it, and what you expected instead.
+      placeholder: |
+        Title: ...
+
+        What happened?
+
+        Steps to reproduce:
+        1.
+        2.
+
+        Expected behavior:
+    validations:
+      required: true
+
+  - type: textarea
+    id: supporting-media
+    attributes:
+      label: Supporting files & media
+      description: Drag and drop screenshots, videos, or log files here (optional). Use the plugin's "Open Logs" action to find your log file.
+    validations:
+      required: false
+
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: Recommended
+      placeholder: e.g. 0.1.0.4
+    validations:
+      required: false
+
+  - type: input
+    id: sc-version
+    attributes:
+      label: SC version channel & build number
+      description: Recommended
+      placeholder: e.g. LIVE 4.0.1 (build 12345)
+    validations:
+      required: false
+
+  - type: input
+    id: streamdeck-version
+    attributes:
+      label: streamdeck.exe version
+      description: Optional
+      placeholder: e.g. 6.9.1.12345
+    validations:
+      required: false
+
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device
+      description: Optional
+      options:
+        - Stream Deck MK.2
+        - Stream Deck XL
+        - Stream Deck +
+        - Stream Deck Mini
+        - Stream Deck Neo
+        - Stream Deck Mobile
+        - Other
+    validations:
+      required: false

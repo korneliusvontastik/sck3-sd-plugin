@@ -1,0 +1,44 @@
+name: Feature Request
+description: Suggest an idea for this plugin
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: input
+    id: title
+    attributes:
+      label: Feature title
+      description: A short summary of the feature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A fuller explanation of the feature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: The use case or pain point behind this request.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the feature or solution you'd like
+      description: What you want to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: supporting-media
+    attributes:
+      label: Supporting files & media
+      description: Drag and drop screenshots, videos, or files here (optional).
+    validations:
+      required: false
