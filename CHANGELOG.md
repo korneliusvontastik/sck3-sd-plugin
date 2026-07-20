@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- **Keybind Auto-Fill** custom-profile export (`Controls/Mappings/*.xml`) is now built from the same merge result as the live `actionmaps.xml` instead of a separate, independent construction — pre-existing joystick/gamepad/mouse rebinds (e.g. a multi-joystick HOTAS setup) are now preserved in the exported profile instead of being silently dropped, and the profile's `<devices>` block only advertises device categories it actually carries content for (previously it always claimed Mouse and Joystick even when empty, which risked wiping a player's real bindings if they mapped a physical device to one of those slots on import). Also adds the `<options type="keyboard">` element real SC exports carry (Microsoft's fixed `GUID_SysKeyboard` constant, or copied from the player's own `actionmaps.xml` when available), which the plugin previously omitted entirely. Investigative fix for #3 — pending confirmation from affected reporters.
+
 ## [0.1.0.4] - 2026-07-13
 
 ### Fixed

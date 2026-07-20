@@ -290,7 +290,7 @@ export class KeybindAutoFill extends SingletonAction<KeybindAutoFillSettings> {
 			const timestamp = filenameTimestamp(new Date());
 			const outputFile = `SCK3_Generated_Keybinds_${timestamp}.xml`;
 			const customProfilePath = join(paths.mappingsDir, outputFile);
-			writeFileSync(customProfilePath, serializeCustomProfile(parsed, actions, generated), "utf8");
+			writeFileSync(customProfilePath, serializeCustomProfile(parsed, actions, generated, "SCK3_Generated", userActionMapsXml), "utf8");
 			result.events.customProfileWritten = { timestamp: new Date().toISOString(), path: customProfilePath };
 			logger.info(`Written: ${customProfilePath}`);
 
