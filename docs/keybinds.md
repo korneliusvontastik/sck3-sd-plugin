@@ -2,7 +2,7 @@
 
 **Project:** SCK3 — Star Citizen Kommand Kontrol Kit  
 **Author:** Kornelius Von Tastik | KVT Korp  
-**SC Version:** 4.8 | **Updated:** 2026-07-09
+**SC Version:** 4.9.0 | **Updated:** 2026-07-21
 
 For the machine implementation of all rules (key pools, modifier combos, deny lists, context groups) see `sck3/src/keybindkrafter/config.ts`.
 
@@ -41,6 +41,23 @@ The Stream Deck plugin sends key combos to the OS via standard keyboard simulati
 - Stream Deck buttons can trigger any `kb1_` bind in SC's XML
 - The plugin generates and writes a complete `actionmaps.xml` with every SC action mapped
 - On button press, the SD button triggers the bound combo — SC receives it as a keyboard input
+
+---
+
+## Known SC Bug: Custom-Profile Import Doesn't Register Some Actionmaps
+
+Star Citizen's own **Options > Keybindings > Load profile from file** import silently fails to register binds for a specific set of actionmaps — confirmed on CIG's issue council as a Star Citizen bug, not something wrong in the profile SCK3 generates:
+
+- `vehicle_mfd` (MFDs)
+- `vehicle_mobiglas`
+- `stopwatch`
+- `hacking`
+- `character_customizer`
+- `RemoteRigidEntityController`
+
+This was investigated extensively (2026-07-21): a byte-for-byte diff of the generated custom profile against real SC-native exports and a confirmed-working direct file write found no schema difference that explains it — a stray `device="keyboard"` attribute was one candidate, tried and ruled out (removing it made no difference in-game). It isn't fixable from our output.
+
+**Workaround:** run **Keybind Auto-Fill with Star Citizen closed.** It writes directly into the live `actionmaps.xml` (`mergeGeneratedIntoActionMaps` in `serializer.ts`), which SC reads correctly at launch — confirmed working end-to-end for `vehicle_mfd`, including in-game settings display and a native re-export. Only fall back to the in-game "Load profile from file" import for actionmaps outside the list above.
 
 ---
 

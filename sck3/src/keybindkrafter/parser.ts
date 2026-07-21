@@ -10,10 +10,21 @@ const xmlParser = new XMLParser({
 
 // ─── DefaultProfile parsing ──────────────────────────────────────────────────
 
+// Every activationMode value CIG's own real defaultProfile.xml actually uses (confirmed by
+// scanning the full ~1,100-action extract, not guessed). Missing any of these silently coerced
+// that action's mode to 'press' — confirmed to break vehicle_mfd's *_long actions, whose real
+// default is 'delayed_press': the generator was writing activationMode="press" for all 26 of
+// them instead of preserving 'delayed_press'. A real, worth-fixing bug on its own, but not the
+// cause of vehicle_mfd's binds failing to register via SC's in-game custom-profile import — that
+// turned out to be a Star Citizen bug unrelated to anything in our output, see docs/keybinds.md
+// § "Known SC Bug".
 function parseActivationMode(name: string | undefined): ActivationMode {
   const valid: ActivationMode[] = [
     'press', 'hold', 'hold_no_retrigger', 'release',
     'tap', 'hold_toggle', 'smart_toggle', 'double_tap',
+    'delayed_press', 'delayed_press_medium',
+    'delayed_hold', 'delayed_hold_long', 'delayed_hold_no_retrigger',
+    'double_tap_nonblocking', 'all',
   ]
   return valid.includes(name as ActivationMode) ? (name as ActivationMode) : 'press'
 }

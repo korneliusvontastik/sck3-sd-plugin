@@ -232,8 +232,18 @@ function deviceInstance(input: string): { tag: string; instance: string } | null
  *
  * The keyboard rebind's `device="keyboard"` attribute is a known, intentional deviation from real
  * SC exports (which never set it) — re-added here on top of the shared merge result, which
- * otherwise never included it (mergeGeneratedIntoActionMaps has no need for it). Left in rather
- * than removed: nothing points to it causing import problems, and it predates this refactor.
+ * otherwise never included it (mergeGeneratedIntoActionMaps has no need for it).
+ *
+ * KNOWN SC BUG (2026-07-21, confirmed via CIG issue council, SC will fix on their end):
+ * `vehicle_mfd`/`vehicle_mobiglas`/`stopwatch`/`hacking`/`character_customizer`/
+ * `RemoteRigidEntityController` binds never register through SC's own "Load profile from file"
+ * import, no matter what this function emits — tried and ruled out removing `device="keyboard"`
+ * here (the one attribute that differed from a confirmed-working direct write to actionmaps.xml
+ * and from real SC exports); made no difference in-game. Don't re-attempt schema tweaks here to
+ * chase this — it isn't fixable from our output. The reliable workaround is Keybind Auto-Fill run
+ * with the game closed (mergeGeneratedIntoActionMaps writing directly to actionmaps.xml), then
+ * launch SC and use its own Export to get a profile file if one is wanted afterward. See
+ * docs/keybinds.md.
  */
 export function serializeCustomProfile(
   parsed: ParsedBindings,

@@ -7,6 +7,13 @@ export type ActivationMode =
   | 'hold_toggle'
   | 'smart_toggle'
   | 'double_tap'
+  | 'delayed_press'
+  | 'delayed_press_medium'
+  | 'delayed_hold'
+  | 'delayed_hold_long'
+  | 'delayed_hold_no_retrigger'
+  | 'double_tap_nonblocking'
+  | 'all'
 
 export type BindingSource = 'cig' | 'user' | 'generated'
 
