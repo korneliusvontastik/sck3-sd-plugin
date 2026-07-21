@@ -24,48 +24,72 @@ export const CANDIDATE_KEYS: string[] = [
 // All 32 modifier combinations (2⁵), P1–P32 per rules doc.
 // Generator iterates in order, picks first available slot.
 // ⚠️ = flag for hardware testing  🔴 = AltGr risk on EU keyboards
+// Only 5 of the 6 real modifier keys are combined here — `ralt` is deliberately not one of them,
+// on top of also being in FORBIDDEN_KEYS as a main key. On European keyboard layouts (AZERTY,
+// QWERTZ, Nordic, UK, ...) the OS/hardware intercepts right Alt before DirectInput ever sees it
+// and resends it as a simultaneous `lctrl+ralt` signal (AltGr), so `ralt` can never appear alone —
+// it's not a usable, independent modifier signal to combine with anything. See docs/keybinds.md
+// § "The one exception: ralt (AltGr)".
+// Tiers containing 'lctrl' are never actually emitted — see MODIFIER_BANNED_GROUPS below.
+// lctrl is a real held CIG action (strafe-down/prone/pan-down) in every context group this
+// generator targets, so every tier that includes it is conditionally excluded everywhere.
+// Left in the array (rather than removed) so the priority numbering/doc stays stable.
 export const MODIFIER_PRIORITY: string[][] = [
   [],                                              // P1
   ['lshift'],                                      // P2
-  ['lctrl'],                                       // P3  (skip for foot context)
+  ['lctrl'],                                       // P3  banned — see MODIFIER_BANNED_GROUPS
   ['lalt'],                                        // P4
   ['rshift'],                                      // P5  ⚠️
   ['rctrl'],                                       // P6  ⚠️
-  ['lshift','lctrl'],                              // P7
+  ['lshift','lctrl'],                              // P7  banned — see MODIFIER_BANNED_GROUPS
   ['lshift','lalt'],                               // P8
-  ['lctrl','lalt'],                                // P9  🔴
+  ['lctrl','lalt'],                                // P9  banned — see MODIFIER_BANNED_GROUPS 🔴
   ['lshift','rshift'],                             // P10 ⚠️
   ['lshift','rctrl'],                              // P11 ⚠️
-  ['lctrl','rshift'],                              // P12 ⚠️
-  ['lctrl','rctrl'],                               // P13 ⚠️
+  ['lctrl','rshift'],                              // P12 banned — see MODIFIER_BANNED_GROUPS ⚠️
+  ['lctrl','rctrl'],                               // P13 banned — see MODIFIER_BANNED_GROUPS ⚠️
   ['lalt','rshift'],                               // P14 ⚠️
   ['lalt','rctrl'],                                // P15 ⚠️
   ['rshift','rctrl'],                              // P16 ⚠️
-  ['lshift','lctrl','lalt'],                       // P17
-  ['lshift','lctrl','rshift'],                     // P18 ⚠️
-  ['lshift','lctrl','rctrl'],                      // P19 ⚠️
+  ['lshift','lctrl','lalt'],                       // P17 banned — see MODIFIER_BANNED_GROUPS
+  ['lshift','lctrl','rshift'],                     // P18 banned — see MODIFIER_BANNED_GROUPS ⚠️
+  ['lshift','lctrl','rctrl'],                      // P19 banned — see MODIFIER_BANNED_GROUPS ⚠️
   ['lshift','lalt','rshift'],                      // P20 ⚠️
   ['lshift','lalt','rctrl'],                       // P21 ⚠️
-  ['lctrl','lalt','rshift'],                       // P22 🔴
-  ['lctrl','lalt','rctrl'],                        // P23 🔴
+  ['lctrl','lalt','rshift'],                       // P22 banned — see MODIFIER_BANNED_GROUPS 🔴
+  ['lctrl','lalt','rctrl'],                        // P23 banned — see MODIFIER_BANNED_GROUPS 🔴
   ['lshift','rshift','rctrl'],                     // P24 ⚠️
-  ['lctrl','rshift','rctrl'],                      // P25 ⚠️
+  ['lctrl','rshift','rctrl'],                      // P25 banned — see MODIFIER_BANNED_GROUPS ⚠️
   ['lalt','rshift','rctrl'],                       // P26 ⚠️
-  ['lshift','lctrl','lalt','rshift'],              // P27 🔴
-  ['lshift','lctrl','lalt','rctrl'],               // P28 🔴
-  ['lshift','lctrl','rshift','rctrl'],             // P29 ⚠️
+  ['lshift','lctrl','lalt','rshift'],              // P27 banned — see MODIFIER_BANNED_GROUPS 🔴
+  ['lshift','lctrl','lalt','rctrl'],               // P28 banned — see MODIFIER_BANNED_GROUPS 🔴
+  ['lshift','lctrl','rshift','rctrl'],             // P29 banned — see MODIFIER_BANNED_GROUPS ⚠️
   ['lshift','lalt','rshift','rctrl'],              // P30 ⚠️
-  ['lctrl','lalt','rshift','rctrl'],               // P31 🔴
-  ['lshift','lctrl','lalt','rshift','rctrl'],      // P32 ⚠️
+  ['lctrl','lalt','rshift','rctrl'],               // P31 banned — see MODIFIER_BANNED_GROUPS 🔴
+  ['lshift','lctrl','lalt','rshift','rctrl'],      // P32 banned — see MODIFIER_BANNED_GROUPS ⚠️
 ]
 
 // Binds using these modifiers are flagged in output for hardware testing
 export const FLAG_FOR_TESTING = new Set(['rshift', 'rctrl'])
 
-// lshift + these keys are force-skipped in spaceship_vehicles and foot contexts.
-// lshift alone triggers boost (ships) and sprint (foot) — players hold it during
-// movement, so any lshift+WASDQE combo ghost-fires. See rules doc § lshift movement exception.
+// Modifiers that are themselves a held CIG action in these context groups — never usable as a
+// modifier there, because CIG's engine doesn't suppress the bare action just because a chord is
+// registered on top of it. Confirmed in-game: holding lctrl for *any* lctrl+X chord (e.g. IFCS
+// Proximity Assist) produces an unwanted strafe-down nudge, not just when X collides with another
+// bare-bound action — so this is a full ban per group, not a per-key exception.
+export const MODIFIER_BANNED_GROUPS: Partial<Record<string, { groups: GroupName[]; reason: string }>> = {
+  lctrl: {
+    groups: ['spaceship_vehicles', 'foot', 'ui'],
+    reason: 'bare lctrl is always a held action here: strafe-down (ships), prone (foot), spectator/mapui pan-down (ui)',
+  },
+}
+
+// lshift alone triggers boost (ships) / sprint (foot) — players hold it during movement, so any
+// lshift+WASDQE combo ghost-fires. Unlike lctrl, lshift's only known side effect (afterburner
+// boost) is tied to forward thrust (w), not felt on arbitrary key presses, so only WASDQE is
+// excluded rather than a full modifier ban.
 export const LSHIFT_MOVEMENT_KEYS = new Set(['w','a','s','d','q','e'])
+export const LSHIFT_MOVEMENT_GROUPS: GroupName[] = ['spaceship_vehicles', 'foot']
 
 // Keys forbidden as the main key
 // Note: `enter` is banned outright here, but its numpad twin `np_enter` deliberately is NOT — CIG's
@@ -78,6 +102,13 @@ export const LSHIFT_MOVEMENT_KEYS = new Set(['w','a','s','d','q','e'])
 // level, outside the actionmaps system entirely — it has no entry anywhere in defaultProfile.xml,
 // so nothing in CIG's own data flags it as taken. It fires on the raw key regardless of held
 // modifiers, so this bans it as a main key under every modifier combo, not just bare.
+// `ralt` is banned outright (as both a main key and — see MODIFIER_PRIORITY, it's never used as a
+// modifier either) because on European keyboard layouts (AZERTY, QWERTZ, Nordic, UK, ...) pressing
+// right Alt is intercepted at the OS/hardware level *before* DirectInput ever sees it, and Windows
+// resends it as a simultaneous `lctrl+ralt` signal — this is AltGr, used to type everyday
+// characters (@, {, }, ~, etc.) on those layouts. A generated bind on bare `ralt` would silently
+// never fire (the game only ever sees `lctrl+ralt`), and a generated `lctrl+ralt` bind would hijack
+// AltGr entirely, breaking normal typing. See docs/keybinds.md § "The one exception: ralt (AltGr)".
 export const FORBIDDEN_KEYS = new Set([
   'f13','f14','f15','f16','f17','f18','f19','f20','f21','f22','f23','f24',
   'contextmenu','lwin','rwin','ralt','grave',
@@ -130,6 +161,12 @@ export const CONTEXT_GROUPS: Record<GroupName, string[]> = {
     // (ship systems, flight systems, vehicle actions, remote turrets, mining mode) used while
     // seated, so its combo space overlaps spaceship/vehicle binds, not just foot ones.
     'player_choice',
+    // player also lives here: MobiGlas/comm/scoreboard-style actions (e.g. ship_recall) stay
+    // live while seated — confirmed in-game (issue: lshift+u generated for both
+    // spaceship_general's v_toggle_all_doorlocks and player's ship_recall ejected the pilot from
+    // their seat instead of toggling door locks). Cross-listing here stops the generator from
+    // handing out the same combo to both.
+    'player',
     // Active in all contexts
     'default','flycam','debug','server_renderer',
     'view_director_mode','RemoteRigidEntityController',

@@ -5,7 +5,9 @@ import {
   FORBIDDEN_KEYS,
   DENY_COMBOS,
   FLAG_FOR_TESTING,
+  MODIFIER_BANNED_GROUPS,
   LSHIFT_MOVEMENT_KEYS,
+  LSHIFT_MOVEMENT_GROUPS,
   comboKey,
   getGroups,
 } from './config.js'
@@ -48,8 +50,8 @@ export function generateMissingBinds(actions: SCAction[]): GeneratedBind[] {
 
     outer:
     for (const modifiers of MODIFIER_PRIORITY) {
-      // On-foot rule: lctrl is physically occupied by crouch/prone — skip for foot group
-      if (groups.includes('foot') && modifiers.includes('lctrl')) continue
+      // Skip entire modifier tier if any modifier in it is banned for one of this action's groups
+      if (modifiers.some(m => MODIFIER_BANNED_GROUPS[m]?.groups.some(g => groups.includes(g)))) continue
 
       for (const key of CANDIDATE_KEYS) {
         if (FORBIDDEN_KEYS.has(key)) continue
@@ -58,7 +60,7 @@ export function generateMissingBinds(actions: SCAction[]): GeneratedBind[] {
         if (
           modifiers.includes('lshift') &&
           LSHIFT_MOVEMENT_KEYS.has(key) &&
-          (groups.includes('spaceship_vehicles') || groups.includes('foot'))
+          LSHIFT_MOVEMENT_GROUPS.some(g => groups.includes(g))
         ) continue
 
         const combo = comboKey(modifiers, key)

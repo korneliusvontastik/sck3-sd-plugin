@@ -71,8 +71,11 @@ describe('generateMissingBinds', () => {
 
   it('allows same combo across different groups', () => {
     const actions: SCAction[] = [
+      // 'player' is deliberately not used here — it's cross-listed into spaceship_vehicles
+      // (MobiGlas/comm actions like ship_recall stay live while seated), so it shares a
+      // collision space with spaceship_movement rather than being a true foot-only group.
       makeAction('ship_action', 'spaceship_movement'),
-      makeAction('foot_action', 'player'),
+      makeAction('foot_action', 'hacking'),
     ]
     const generated = generateMissingBinds(actions)
     // Both should get f1 (simplest) since they're in different groups
@@ -137,6 +140,23 @@ describe('generateMissingBinds', () => {
     expect(generated).toHaveLength(1)
     expect(generated[0].actionName).toBe('pc_pit_player_actions')
     expect(generated[0].input).not.toBe('lalt+2')
+  })
+
+  it.each([
+    ['spaceship_vehicles', 'spaceship_movement'],
+    ['foot', 'player'],
+    ['ui', 'mapui'],
+  ])('never generates any lctrl+X combo in %s — lctrl alone is always a held CIG action there (strafe-down/prone/pan-down), so any chord on it ghost-fires', (_group, mapName) => {
+    // Mirrors the reported bug (GitHub #1): "going ctrl+q or ctrl+e to roll while lowering
+    // doesn't work". Originally fixed narrowly for lctrl+q/lctrl+e; confirmed in-game the ghost-fire
+    // isn't limited to those two keys or to spaceship_vehicles, so lctrl is now fully banned as a
+    // modifier in every context group where it's a bare held action.
+    const actions: SCAction[] = Array.from({ length: 60 }, (_, i) =>
+      makeAction(`action_${i}`, mapName)
+    )
+    const generated = generateMissingBinds(actions)
+    const combos = generated.map(g => g.input)
+    expect(combos.some(c => c.split('+').includes('lctrl'))).toBe(false)
   })
 
   it('never generates a denied combo', () => {
