@@ -6,10 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.1.0.5] - 2026-07-21
+
 ### Fixed
 
 - **Keybind Auto-Fill** custom-profile export (`Controls/Mappings/*.xml`) is now built from the same merge result as the live `actionmaps.xml` instead of a separate, independent construction — pre-existing joystick/gamepad/mouse rebinds (e.g. a multi-joystick HOTAS setup) are now preserved in the exported profile instead of being silently dropped, and the profile's `<devices>` block only advertises device categories it actually carries content for (previously it always claimed Mouse and Joystick even when empty, which risked wiping a player's real bindings if they mapped a physical device to one of those slots on import). Also adds the `<options type="keyboard">` element real SC exports carry (Microsoft's fixed `GUID_SysKeyboard` constant, or copied from the player's own `actionmaps.xml` when available), which the plugin previously omitted entirely. Investigative fix for #3 — pending confirmation from affected reporters.
 - **Keybind Auto-Fill** no longer coerces every CIG activation mode it doesn't recognize down to `press`. The parser's whitelist was missing several real modes CIG uses (`delayed_press`, `delayed_press_medium`, `delayed_hold`, `delayed_hold_long`, `delayed_hold_no_retrigger`, `double_tap_nonblocking`, `all`) — most visibly affecting every `vehicle_mfd` `_long` action (MFD navigation hold-actions), whose real default is `delayed_press` but was being generated as `press`. Verified against the full real `defaultProfile.xml` (1,100+ actions): 0 dropped actions, 0 activationMode mismatches, 0 unhandled modes.
+- **Keybind Auto-Fill** no longer generates `lctrl+X` combos in `spaceship_vehicles`, `foot`, or `ui` for any action. `lctrl` alone is always a held CIG action in these contexts (`v_strafe_down`/"lower" in ships, `prone` on foot, spectator/mapui pan-down in ui) — CIG's engine doesn't suppress that action just because a chord is registered on top of it, so any generated `lctrl+X` bind ghost-fired the held action instead. Previously this was only skipped for the `foot` group, plus a narrow set of movement keys in `spaceship_vehicles`; confirmed in-game the ghost-fire isn't limited to either (reported: `lctrl+q`/`lctrl+e` silently ate roll input while strafing down — #1).
+- **Keybind Auto-Fill** now cross-lists `player` into the `spaceship_vehicles` context group. MobiGlas/comm actions like `ship_recall` stay reachable while seated in a ship, but were only tracked as occupying `foot` — so the generator could hand them a combo `spaceship_vehicles` already used (reported: `lshift+u` was independently assigned to both `ship_recall` and `v_toggle_all_doorlocks`, so pressing it ejected the pilot instead of toggling door locks).
 
 ### Known Issues
 
